@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.2"
+__generated_with = "0.16.3"
 app = marimo.App(width="medium")
 
 
@@ -10,14 +10,33 @@ def _():
     import polars as pl
     import numpy as np
     from datetime import datetime, date
-    return mo, pl
+    import pathlib
+    import chardet
+
+    data_path = pathlib.Path('/mnt/expansion16TB/Dropbox/3_Resources/marimo_data')
+    return chardet, mo, pathlib, pl
 
 
 @app.cell
 def _(mo):
     mo.md(
         r"""
-    # Polars Tutorial
+    # 1. Foundations & Philosophy
+
+    **Why Polars?** Performance, memory efficiency, expressive API
+
+    **Core concepts:** Immutability, lazy vs eager execution, expressions
+
+    **Key differences from pandas:** No index, column-oriented, query optimization
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
     ## Introduction and Setup
 
     ```bash
@@ -119,9 +138,13 @@ def _(mo):
 def _(mo):
     mo.md(
         r"""
-    # Creating DataFrames
+    # 2. Loading & Inspecting Data
 
-    ## From dictionaries
+    Reading files: `read_csv()`, `read_parquet()`, `read_excel()`
+
+    Schema control: `dtypes`, `schema_overrides`
+
+    Initial exploration: `head()`, `tail()`, `glimpse()`, `describe()`, `schema`
     """
     )
     return
@@ -176,7 +199,7 @@ def _(mo):
 def _(mo):
     mo.md(
         r"""
-    ## Schema control
+    ## Schema control and Encoding
 
     ### dtypes
 
@@ -188,43 +211,72 @@ def _(mo):
 
 
 @app.cell
+def _(df):
+    df.estimated_size()
+    return
+
+
+@app.cell
 def _(pl):
-    # df = pl.read_csv('../data/stores_sales_forecasting.csv')
-    df = (pl.read_csv('../data/stores_sales_forecasting2.csv',
+    # When possible, have a good idea of the data you're ingesting. How many columns? How many rows? What fields? Types? Etc.
+
+    # Error: First attempt. In its original format, the csv file was encoded using 'cp1252' but is read using a different encoding.
+    #      No exception is raised, but it is misread. Note ZERO rows and 42,441 columns.
+
+    sales_file_path = '/mnt/expansion16TB/Dropbox/3_Resources/marimo_data/stores_sales_forecasting.csv'
+
+    # df = pl.read_csv(sales_file_path) # First attempt
+
+    # Second attempt
+    df = (pl.read_csv(sales_file_path,
                     encoding='cp1252',
                     schema_overrides={
                             'Row ID':pl.UInt16,
                             'Postal Code':pl.String,
                             'Quantity':pl.UInt16,
+                            'Sales':pl.Float32,
+                            'Profit':pl.Float32,
+                            'Discount':pl.Float32
                             }
-                     )
-     
+                     ).drop(['Country', 'Row ID'])
          )
+
     df.shape
-    return (df,)
+    return df, sales_file_path
 
 
 @app.cell
-def _(mo):
-    mo.md(
-        r"""
-    # Inspecting data
-    ## Initial exploration
+def _(chardet, pathlib, sales_file_path):
+    with open(pathlib.Path(sales_file_path), 'rb') as file:
+        # Read first 100,000 bytes or entire file if smaller
+        raw_data = file.read(100000)
 
-    ### head(), tail(), describe(), schema
-
-    """
-    )
+    # Detect encoding
+    results = chardet.detect(raw_data)
+    results
     return
 
 
 @app.cell
 def _(df):
-    dict(df.schema) # wrapped in dict() constructor so Marimo prints vertically
+    df.head()
     return
 
 
 @app.cell
+def _(df):
+    df['Segment'].value_counts()
+    return
+
+
+@app.cell
+def _(df):
+    # If you see only types and no column names, you have a problem. In this case, it's an encoding error.
+    dict(df.schema) # wrapped in dict() constructor so Marimo prints vertically
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -245,6 +297,12 @@ def _(mo):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""### Return a single item""")
+    return
+
+
+@app.cell
 def _(df):
     # df.item(1,2) = 'November 8, 2016' # Not allowed in Polars, DataFrames are immutable
     df.item(1,2)
@@ -252,7 +310,32 @@ def _(df):
 
 
 @app.cell
-def _():
+def _(mo):
+    mo.md(r"""### Check Unique values""")
+    return
+
+
+@app.cell
+def _(sample_df):
+    sample_df["name"].value_counts()
+    return
+
+
+@app.cell
+def _(df):
+    df['State'].value_counts(sort=True, parallel=True, name="count")
+    return
+
+
+@app.cell
+def _(df):
+    df['State'].unique().sort()
+    return
+
+
+@app.cell
+def _(df, pl):
+    df.filter(pl.col('Postal Code').str.len_chars()<5)['Postal Code'].unique().sort()
     return
 
 
@@ -264,40 +347,9 @@ def _(df):
 
 @app.cell
 def _():
-    return
-
-
-@app.cell
-def _(df, pl):
-    # Keep original string column while creating parsed version
-    df_sales = df.with_columns([
-        pl.col("Order Date")
-        .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
-        .alias("Order Date Parsed")
-    ])
-
-    # Filter for nulls in parsed column (these are failures)
-    parse_failures = df_sales.filter(
-        pl.col("Order Date Parsed").is_null() & 
-        pl.col("Order Date").is_not_null()  # Original had a value
-    )
-
-    print(f"Rows that failed to parse: {len(parse_failures)}")
-    print(parse_failures.select(["Order Date", "Order Date Parsed"]))
-    return
-
-
-@app.cell
-def _():
     # Eager
     # iowa_df1 = pl.read_csv('../data/Iowa_Liquor_Sales-26M.csv.gz', infer_schema_length=100000)
     # iowa_df1 = pl.read_csv('../data/Iowa_Liquor_Sales-26M.csv.gz', schema_overrides={'Zip Code':pl.String, 'Item Number':pl.String})
-    return
-
-
-@app.cell
-def _(lazy_sample):
-    dict(lazy_sample.schema)
     return
 
 
@@ -340,67 +392,130 @@ def _(pl):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""## Summary Statistics""")
+    return
+
+
+@app.cell
 def _(sample_df):
-    ## Basic DataFrame Methods - Summary Statistics
+    sample_df.describe()
+    return
 
 
-    # Summary statistics and info
-    print("Summary statistics:")
-    print(sample_df.describe())
+@app.cell
+def _(df):
+    df.describe()
+    return
 
-    print("\n" + "="*50 + "\n")
 
-    print("Info about the DataFrame:")
-    print(sample_df.schema)
+@app.cell
+def _(sample_df):
+    sample_df.schema
+    return
 
-    print("\n" + "="*50 + "\n")
 
-    print("Null value counts:")
-    print(sample_df.null_count())
+@app.cell
+def _(sample_df):
+    sample_df.null_count()
+    return
 
-    print("\nUnique value counts for 'department' column:")
-    print(sample_df["department"].value_counts())
+
+@app.cell
+def _(sample_df):
+    sample_df["department"].value_counts()
+    return
+
+
+@app.cell
+def _(df, pl):
+    # Since using Select, results in a DataFrame
+    sorted_zip = (
+                    df
+                    .filter(pl.col('Postal Code').str.len_chars()<5)
+                    .select('Postal Code')
+                    .unique()
+                    .sort('Postal Code')
+    )
+    sorted_zip
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 3. Selecting & Filtering
+
+    Column selection: `select()`, `pl.col()`, `pl.all()`, `pl.exclude()`
+
+    Row filtering: `filter()`, boolean expressions
+
+    Slicing: row/column indexing with `[]`
+
+    Getting values: `item()`, `row()`
+    """
+    )
+    return
+
+
+@app.cell
+def _(sample_df):
+    _single_col_df = sample_df.select("name") #.select() returns a dataframe, not a series
+    print(type(_single_col_df))
+    _single_col_df
+    return
+
+
+@app.cell
+def _(sample_df):
+    # Accessing a single column directly by name  (returns a Series object)
+    _single_col_series = sample_df["name"]
+    _single_col_series
+    return
+
+
+@app.cell
+def _(sample_df):
+    # Select multiple columns:
+    _multi_cols = sample_df.select(["name", "age", "salary"])
+    _multi_cols
     return
 
 
 @app.cell
 def _(pl, sample_df):
-    ## Basic DataFrame Methods - Selection and Filtering
-
-
-    # Column selection
-    print("Select single column (returns DataFrame):")
-    _single_col_df = sample_df.select("name")
-    print(_single_col_df)
-
-    print("\nSelect single column (returns Series):")
-    _single_col_series = sample_df["name"]
-    print(_single_col_series)
-
-    print("\nSelect multiple columns:")
-    _multi_cols = sample_df.select(["name", "age", "salary"])
-    print(_multi_cols)
-
-    print("\n" + "="*40 + "\n")
-
     # Row filtering
     print("Filter rows where age > 30:")
     _filtered_df = sample_df.filter(pl.col("age") > 30)
-    print(_filtered_df)
-
-    print("\nFilter rows with multiple conditions:")
-    _complex_filter = sample_df.filter(
-        (pl.col("age") > 25) & (pl.col("department") == "Engineering")
-    )
-    print(_complex_filter)
+    _filtered_df
     return
 
 
 @app.cell
 def _(pl, sample_df):
-    ## Basic DataFrame Methods - Sorting and Grouping
+    print("\nFilter rows with multiple conditions: Engineers over 30")
+    _complex_filter = sample_df.filter(
+        (pl.col("age") > 30) & (pl.col("department") == "Engineering")
+    )
+    _complex_filter
+    return
 
 
+@app.cell
+def _(sample_df):
+    sample_df.write_csv('sample_df_employees.csv')
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""# Sorting and Grouping""")
+    return
+
+
+@app.cell
+def _(sample_df):
     # Sorting
     print("Sort by age (ascending):")
     _sorted_asc = sample_df.sort("age")
@@ -415,8 +530,17 @@ def _(pl, sample_df):
     print(_multi_sort)
 
     print("\n" + "="*40 + "\n")
+    return
 
-    # Grouping and aggregation
+
+@app.cell
+def _(mo):
+    mo.md(r"""# Grouping and aggregation""")
+    return
+
+
+@app.cell
+def _(pl, sample_df):
     print("Group by department and calculate mean salary:")
     _grouped = sample_df.group_by("department").agg(
         pl.col("salary").mean().alias("avg_salary"),
@@ -428,10 +552,13 @@ def _(pl, sample_df):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""Adding and Modifying Columns""")
+    return
+
+
+@app.cell
 def _(pl, sample_df):
-    ## Basic DataFrame Methods - Adding and Modifying Columns
-
-
     # Adding new columns
     print("Add new columns:")
     _df_with_new_cols = sample_df.with_columns([
@@ -519,45 +646,200 @@ def _():
 
 
 @app.cell
-def _(pl):
-    ## Practice Exercise
+def _(mo):
+    mo.md(r""" """)
+    return
 
 
-    # Practice exercise: Create and manipulate a DataFrame
-    print("Practice Exercise: Sales Data Analysis")
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 4. Data Transformation
 
-    _sales_data = pl.DataFrame({
-        "date": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05"],
-        "product": ["Laptop", "Mouse", "Laptop", "Keyboard", "Mouse"],
-        "quantity": [2, 10, 1, 5, 8],
-        "unit_price": [1000, 25, 1000, 75, 25],
-        "sales_rep": ["John", "Mary", "John", "Bob", "Mary"]
-    })
+    Adding/modifying columns: `with_columns()`
 
-    print("Sales data:")
-    print(_sales_data)
+    Expressions: `pl.col()` operations (math, string, date methods)
+    sum_horizontal()
+    max_horizontal()
+    min_horizontal()
+    mean_horizontal()
 
-    # Try these exercises:
-    print("\nExercise solutions:")
+    Casting types: `cast()`
 
-    # 1. Add a total_amount column
-    _exercise_1 = _sales_data.with_columns(
-        (pl.col("quantity") * pl.col("unit_price")).alias("total_amount")
+    Renaming: `alias()`, `rename()`
+
+    Dropping: `drop()`
+    """
     )
-    print("\n1. DataFrame with total_amount column:")
-    print(_exercise_1)
+    return
 
-    # 2. Find total sales by sales rep
-    _exercise_2 = _exercise_1.group_by("sales_rep").agg(
-        pl.col("total_amount").sum().alias("total_sales")
-    ).sort("total_sales", descending=True)
-    print("\n2. Total sales by sales rep:")
-    print(_exercise_2)
 
-    # 3. Filter for high-value sales (>= $1000)
-    _exercise_3 = _exercise_1.filter(pl.col("total_amount") >= 1000)
-    print("\n3. High-value sales (>= $1000):")
-    print(_exercise_3)
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 5. String & Date Operations
+
+    String methods: `str.to_lowercase()`, `str.contains()`, `str.replace()`
+
+    Date parsing: `str.strptime()`, `str.to_date()`
+
+    Date manipulation: `dt.year()`, `dt.month()`, date arithmetic, strptime(), strftime()
+    """
+    )
+    return
+
+
+@app.cell
+def _(df, pl):
+    # Keep original string column while creating parsed version
+    df_sales = df.with_columns([
+        pl.col("Order Date")
+        .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
+        .alias("Order Date Parsed")
+    ])
+
+    # Filter for nulls in parsed column (these are failures)
+    parse_failures = df_sales.filter(
+        pl.col("Order Date Parsed").is_null() & 
+        pl.col("Order Date").is_not_null()  # Original had a value
+    )
+
+    print(f"Rows that failed to parse: {len(parse_failures)}")
+    print(parse_failures.select(["Order Date", "Order Date Parsed"]))
+    print(parse_failures.select(["Order Date", "Order Date Parsed"]))
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 6. Aggregations & Grouping
+
+    Basic aggregations: `sum()`, `mean()`, `min()`, `max()`, `count()`
+
+    Grouping: `group_by()` + `agg()`
+
+    Multiple aggregations at once
+
+    Window functions
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 7. Sorting & Ranking
+
+    Sorting: `sort()`, multiple columns, ascending/descending
+
+    Ranking: `rank()`, `row_number()`
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 8. Joins & Concatenation
+
+    Join types: `join()` (inner, left, outer, cross, semi, anti)
+
+    Concatenating: `pl.concat()` (vertical/horizontal)
+
+    Union operations
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 9. Reshaping Data
+
+    Pivoting: `pivot()`
+
+    Melting: `melt()` (wide to long)
+
+    Exploding lists: `explode()`
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 10. Conditional Logic
+
+    `when().then().otherwise()` chains
+
+    Complex conditional transformations
+
+    `pl.lit()` for literal values
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 11. Missing Data
+
+    Detecting: `is_null()`, `is_not_null()`, `null_count()`
+
+    Handling: `fill_null()`, `drop_nulls()`, `forward_fill()`, `backward_fill()`
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 12. Advanced Topics
+
+    Lazy evaluation: `pl.LazyFrame`, `collect()`, query optimization
+
+    Custom functions: `map_elements()` (use sparingly!)
+
+    List columns: nested data structures
+
+    Performance optimization techniques
+    """
+    )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## 13. I/O & Export
+
+    Writing: `write_csv()`, `write_parquet()`, `write_excel()`
+
+    Interoperability: converting to/from pandas, numpy, arrow
+    """
+    )
+    return
+
+
+@app.cell
+def _():
     return
 
 
