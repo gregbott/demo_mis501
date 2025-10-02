@@ -10,7 +10,8 @@ def _():
     import polars as pl
     import pathlib
     import chardet
-    return chardet, pathlib, pl
+    sales_file_path = './stores_sales_forecasting.csv'
+    return chardet, pathlib, pl, sales_file_path
 
 
 @app.cell
@@ -26,22 +27,26 @@ def _(chardet, pathlib, sales_file_path):
 
 
 @app.cell
-def _(pl):
-    sales_file_path = './stores_sales_forecasting.csv'
-
+def _(pl, sales_file_path):
     df = (pl.read_csv(sales_file_path,
                     encoding='cp1252',
                     schema_overrides={
                             'Row ID':pl.UInt16,
                             'Postal Code':pl.String,
                             'Quantity':pl.UInt16,
-                            'Sales':pl.Float32,
-                            'Profit':pl.Float32,
-                            'Discount':pl.Float32
+                            'Sales':pl.Decimal(scale=2),
+                            'Profit':pl.Decimal(scale=2),
+                            'Discount':pl.Decimal(scale=2)
                             }
                      ).drop(['Country', 'Row ID'])
          )
-    return (sales_file_path,)
+    return (df,)
+
+
+@app.cell
+def _(df):
+    df.glimpse()
+    return
 
 
 @app.cell
