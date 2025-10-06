@@ -48,6 +48,7 @@ pixi.lock
 *.pytest_cache/
 coverage/
 .coverage
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

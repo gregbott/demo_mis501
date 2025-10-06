@@ -70,6 +70,8 @@ def _(mo):
     - No index-based operations (unlike pandas)
 
     Pandas is another DataFrame library released in 2008 by Wes McKinney. Polars is designed to handle larger-than-memory datasets efficiently and provides a more predictable performance profile than pandas.
+
+    ## DataFrame vs. Series
     """
     )
     return
@@ -151,6 +153,12 @@ def _(mo):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""## From a Dictionary""")
+    return
+
+
+@app.cell
 def _(pl):
     _dict_data = {
         "name": ["Alice", "Bob", "Charlie", "Diana"],
@@ -200,19 +208,23 @@ def _(mo):
     mo.md(
         r"""
     ## Schema control and Encoding
+    Encoding converts human-readable text into a machine-readable format, usually binary data, for storage or transmission
+    . A specific encoding standard, like UTF-8, assigns each character a unique numerical value. When you open a text file, your computer uses that same encoding standard to interpret the numbers and display the correct letters. A mismatch between how a file was saved and how it is read can result in unreadable or "garbled" text.
 
     ### dtypes
 
 
     ### schema_overrides
+    Polars
+    ```schema_overrides``` is a feature that allows you to specify or change the data types for individual columns when reading a file, overriding Polars' default type inference. You should use it when Polars incorrectly infers a column's data type, such as interpreting a datetime column as a string or a postal code (which should be a string) interpreted as an integer. This ensures that your data is correctly parsed from the start, which is especially important for lazy evaluations.
     """
     )
     return
 
 
 @app.cell
-def _(df):
-    df.estimated_size()
+def _(store_sales_df):
+    store_sales_df.estimated_size()
     return
 
 
@@ -220,35 +232,35 @@ def _(df):
 def _(pl):
     # When possible, have a good idea of the data you're ingesting. How many columns? How many rows? What fields? Types? Etc.
 
-    # Error: First attempt. In its original format, the csv file was encoded using 'cp1252' but is read using a different encoding.
-    #      No exception is raised, but it is misread. Note ZERO rows and 42,441 columns.
+    # Error: First attempt. In its original format, the csv file was encoded using 'cp1252' but is read using a different (incorrect) encoding.
+    #      No exception is raised, but it is misread. Note ZERO rows and 42,441 columns. 
 
-    sales_file_path = '/mnt/expansion16TB/Dropbox/3_Resources/marimo_data/stores_sales_forecasting.csv'
+    sales_file_path = './stores_sales_forecasting.csv'
 
-    # df = pl.read_csv(sales_file_path) # First attempt
+    # store_sales_df = pl.read_csv(sales_file_path) # First attempt
 
     # Second attempt
-    df = (pl.read_csv(sales_file_path,
-                    encoding='cp1252',
+    store_sales_df = (pl.read_csv(sales_file_path,
+                    encoding='cp1252', # Unless you specify the proper encoding, the data will not ingest correctly.
                     schema_overrides={
                             'Row ID':pl.UInt16,
                             'Postal Code':pl.String,
                             'Quantity':pl.UInt16,
-                            'Sales':pl.Float32,
-                            'Profit':pl.Float32,
-                            'Discount':pl.Float32
+                            'Sales':pl.Decimal(scale=4),
+                            'Profit':pl.Decimal(scale=4),
+                            'Discount':pl.Decimal(scale=4)
                             }
                      ).drop(['Country', 'Row ID'])
          )
 
-    df.shape
-    return df, sales_file_path
+    store_sales_df.shape
+    return sales_file_path, store_sales_df
 
 
 @app.cell
 def _(chardet, pathlib, sales_file_path):
     with open(pathlib.Path(sales_file_path), 'rb') as file:
-        # Read first 100,000 bytes or entire file if smaller
+        # Read first 100,000 bytes or entire file, () if smaller
         raw_data = file.read(100000)
 
     # Detect encoding
@@ -258,21 +270,21 @@ def _(chardet, pathlib, sales_file_path):
 
 
 @app.cell
-def _(df):
-    df.head()
+def _(store_sales_df):
+    store_sales_df.head()
     return
 
 
 @app.cell
-def _(df):
-    df['Segment'].value_counts()
+def _(store_sales_df):
+    store_sales_df['Segment'].value_counts()
     return
 
 
 @app.cell
-def _(df):
+def _(store_sales_df):
     # If you see only types and no column names, you have a problem. In this case, it's an encoding error.
-    dict(df.schema) # wrapped in dict() constructor so Marimo prints vertically
+    dict(store_sales_df.schema) # wrapped in dict() constructor so Marimo prints vertically
     return
 
 
@@ -303,9 +315,9 @@ def _(mo):
 
 
 @app.cell
-def _(df):
-    # df.item(1,2) = 'November 8, 2016' # Not allowed in Polars, DataFrames are immutable
-    df.item(1,2)
+def _(store_sales_df):
+    # store_sales_df.item(1,2) = 'November 8, 2016' # Not allowed in Polars, DataFrames are immutable
+    store_sales_df.item(1,2)
     return
 
 
@@ -316,79 +328,46 @@ def _(mo):
 
 
 @app.cell
-def _(sample_df):
-    sample_df["name"].value_counts()
+def _(store_sales_df):
+    store_sales_df["Segment"].value_counts()
     return
 
 
 @app.cell
-def _(df):
-    df['State'].value_counts(sort=True, parallel=True, name="count")
+def _(store_sales_df):
+    store_sales_df['State'].value_counts(sort=True, parallel=True, name="count")
     return
 
 
 @app.cell
-def _(df):
-    df['State'].unique().sort()
+def _(store_sales_df):
+    store_sales_df['State'].unique().sort()
     return
 
 
 @app.cell
-def _(df, pl):
-    df.filter(pl.col('Postal Code').str.len_chars()<5)['Postal Code'].unique().sort()
+def _(pl, store_sales_df):
+    clean_stores = (
+        store_sales_df
+        .with_columns(pl.when(pl.col('Postal Code').str.len_chars()<5)
+        .then(pl.col('Postal Code').str.zfill(5))
+        .otherwise(pl.col('Postal Code'))
+        .alias('Postal Code'))
+    )
+    clean_stores.filter(pl.col('Postal Code').str.starts_with('0'))
+    return (clean_stores,)
+
+
+@app.cell
+def _(clean_stores, pl):
+    clean_stores.filter(pl.col('Postal Code').str.starts_with('0'))['Postal Code'].unique().sort()
     return
 
 
 @app.cell
-def _(df):
-    df.glimpse()
+def _(store_sales_df):
+    store_sales_df.glimpse()
     return
-
-
-@app.cell
-def _():
-    # Eager
-    # iowa_df1 = pl.read_csv('../data/Iowa_Liquor_Sales-26M.csv.gz', infer_schema_length=100000)
-    # iowa_df1 = pl.read_csv('../data/Iowa_Liquor_Sales-26M.csv.gz', schema_overrides={'Zip Code':pl.String, 'Item Number':pl.String})
-    return
-
-
-@app.cell
-def _():
-
-
-    # iowa_df = pl.scan_csv('../data/Iowa_Liquor_Sales-26M.csv.gz')
-    # result = iowa_df.filter
-    return
-
-
-@app.cell
-def _(pl):
-    ## Basic DataFrame Methods - Inspection
-
-
-    # Basic inspection methods using our sample data
-    sample_df = pl.DataFrame({
-        "id": [1, 2, 3, 4, 5],
-        "name": ["Alice", "Bob", "Charlie", "Diana", "Eve"],
-        "age": [25, 30, 35, 28, 32],
-        "salary": [50000, 60000, 70000, 55000, 65000],
-        "department": ["Engineering", "Marketing", "Engineering", "Sales", "Marketing"]
-    })
-
-    print("Original DataFrame:")
-    print(sample_df)
-
-    print(f"\nShape: {sample_df.shape}")
-    print(f"Columns: {sample_df.columns}")
-    print(f"Data types:\n{sample_df.dtypes}")
-
-    print("\nFirst 3 rows:")
-    print(sample_df.head(3))
-
-    print("\nLast 2 rows:")
-    print(sample_df.tail(2))
-    return (sample_df,)
 
 
 @app.cell
@@ -398,40 +377,16 @@ def _(mo):
 
 
 @app.cell
-def _(sample_df):
-    sample_df.describe()
+def _(store_sales_df):
+    store_sales_df.describe()
     return
 
 
 @app.cell
-def _(df):
-    df.describe()
-    return
-
-
-@app.cell
-def _(sample_df):
-    sample_df.schema
-    return
-
-
-@app.cell
-def _(sample_df):
-    sample_df.null_count()
-    return
-
-
-@app.cell
-def _(sample_df):
-    sample_df["department"].value_counts()
-    return
-
-
-@app.cell
-def _(df, pl):
+def _(pl, store_sales_df):
     # Since using Select, results in a DataFrame
     sorted_zip = (
-                    df
+                    store_sales_df
                     .filter(pl.col('Postal Code').str.len_chars()<5)
                     .select('Postal Code')
                     .unique()
@@ -445,7 +400,7 @@ def _(df, pl):
 def _(mo):
     mo.md(
         r"""
-    ## 3. Selecting & Filtering
+    # 3. Selecting & Filtering
 
     Column selection: `select()`, `pl.col()`, `pl.all()`, `pl.exclude()`
 
@@ -460,51 +415,48 @@ def _(mo):
 
 
 @app.cell
-def _(sample_df):
-    _single_col_df = sample_df.select("name") #.select() returns a dataframe, not a series
+def _():
+    return
+
+
+@app.cell
+def _(store_sales_df):
+    _single_col_df = store_sales_df.select("Customer Name") #.select() returns a dataframe, not a series
     print(type(_single_col_df))
     _single_col_df
     return
 
 
 @app.cell
-def _(sample_df):
-    # Accessing a single column directly by name  (returns a Series object)
-    _single_col_series = sample_df["name"]
-    _single_col_series
+def _(store_sales_df):
+    store_sales_df.columns
     return
 
 
 @app.cell
-def _(sample_df):
+def _(store_sales_df):
     # Select multiple columns:
-    _multi_cols = sample_df.select(["name", "age", "salary"])
+    _multi_cols = store_sales_df.select(["Customer Name", "Segment", "State"])
     _multi_cols
     return
 
 
 @app.cell
-def _(pl, sample_df):
+def _(pl, store_sales_df):
     # Row filtering
-    print("Filter rows where age > 30:")
-    _filtered_df = sample_df.filter(pl.col("age") > 30)
+    print("Filter rows where profit < 0:")
+    _filtered_df = store_sales_df.filter(pl.col("Profit") < 0)
     _filtered_df
     return
 
 
 @app.cell
-def _(pl, sample_df):
-    print("\nFilter rows with multiple conditions: Engineers over 30")
-    _complex_filter = sample_df.filter(
-        (pl.col("age") > 30) & (pl.col("department") == "Engineering")
-    )
+def _(pl, store_sales_df):
+    print("\nFilter rows with multiple conditions: Corporate sales with profit loss")
+    _complex_filter = store_sales_df.filter(
+        (pl.col("Profit") < 0) & (pl.col("Segment") == "Corporate")
+    )[['Order ID', 'Customer Name','Segment','Profit']].sort('Profit')
     _complex_filter
-    return
-
-
-@app.cell
-def _(sample_df):
-    sample_df.write_csv('sample_df_employees.csv')
     return
 
 
@@ -515,39 +467,61 @@ def _(mo):
 
 
 @app.cell
-def _(sample_df):
-    # Sorting
-    print("Sort by age (ascending):")
-    _sorted_asc = sample_df.sort("age")
-    print(_sorted_asc)
-
-    print("\nSort by salary (descending):")
-    _sorted_desc = sample_df.sort("salary", descending=True)
-    print(_sorted_desc)
-
-    print("\nSort by multiple columns:")
-    _multi_sort = sample_df.sort(["department", "age"])
-    print(_multi_sort)
-
-    print("\n" + "="*40 + "\n")
-    return
-
-
-@app.cell
 def _(mo):
     mo.md(r"""# Grouping and aggregation""")
     return
 
 
 @app.cell
-def _(pl, sample_df):
+def _(store_sales_df):
+    store_sales_df.columns
+    return
+
+
+@app.cell
+def _(pl, store_sales_df):
     print("Group by department and calculate mean salary:")
-    _grouped = sample_df.group_by("department").agg(
-        pl.col("salary").mean().alias("avg_salary"),
-        pl.col("age").mean().alias("avg_age"),
+    _grouped = store_sales_df.group_by("Sub-Category").agg(
+        pl.col("Sales").mean().alias("avg_sale"),
+        pl.col("Profit").mean().alias("avg_profit"),
         pl.len().alias("count")
-    )
-    print(_grouped)
+    ).sort('avg_profit',descending=True)
+    _grouped
+    return
+
+
+@app.cell
+def _(pl, store_sales_df):
+    store_sales_df.group_by('Sub-Category').agg([
+        pl.col('Sales').sum().alias('total_sales'),
+        pl.col('Profit').sum().alias('total_profit'),
+        pl.col('Sales').mean().alias('avg_sales'),
+        pl.col('Profit').mean().alias('avg_profit')
+    ])
+    return
+
+
+@app.cell
+def _(pl, store_sales_df):
+    store_sales_df.select(pl.col('Sales').sum().round(3)) # The DataFrame object has a round() method
+    return
+
+
+@app.cell
+def _(store_sales_df):
+    round(store_sales_df['Sales'].sum(),3) # Using this syntax results in a float, which does NOT have a round() method
+    return
+
+
+@app.cell
+def _(store_sales_df):
+    store_sales_df['Sub-Category'].unique()
+    return
+
+
+@app.cell
+def _(store_sales_df):
+    store_sales_df.columns
     return
 
 
@@ -558,37 +532,7 @@ def _(mo):
 
 
 @app.cell
-def _(pl, sample_df):
-    # Adding new columns
-    print("Add new columns:")
-    _df_with_new_cols = sample_df.with_columns([
-        (pl.col("salary") * 0.1).alias("bonus"),
-        pl.when(pl.col("age") >= 30)
-        .then(pl.lit("Senior"))
-        .otherwise(pl.lit("Junior"))
-        .alias("level")
-    ])
-
-    print(_df_with_new_cols)
-
-    print("\n" + "="*40 + "\n")
-
-    # Renaming columns
-    print("Rename columns:")
-    _renamed_df = sample_df.rename({
-        "name": "employee_name",
-        "department": "dept"
-    })
-    print(_renamed_df)
-
-    print("\nDrop columns:")
-    _dropped_cols = sample_df.drop(["id", "department"])
-    print(_dropped_cols)
-    return
-
-
-@app.cell
-def _(pl, sample_df):
+def _(pl, store_sales_df):
     ## Method Chaining Example
 
 
@@ -597,15 +541,15 @@ def _(pl, sample_df):
     print("Filter → Group → Aggregate → Sort")
 
     _chained_result = (
-        sample_df
-        .filter(pl.col("age") >= 28)  # Filter adults
-        .group_by("department")       # Group by department
+        store_sales_df
+        .filter(pl.col("Profit") < 0)  # Filter loss
+        .group_by("Sub-Category")       # Group by department
         .agg([                        # Multiple aggregations
-            pl.col("salary").mean().alias("avg_salary"),
-            pl.col("age").max().alias("max_age"),
-            pl.len().alias("employee_count")
+            pl.col("Sales").mean().alias("avg_sale"),
+            pl.col("Profit").mean().alias("avg_profit"),
+            pl.len().alias("count")
         ])
-        .sort("avg_salary", descending=True)  # Sort by average salary
+        .sort("avg_sale", descending=True)  # Sort by average salary
     )
 
     print(_chained_result)
@@ -613,11 +557,9 @@ def _(pl, sample_df):
 
 
 @app.cell
-def _():
-    ## Key Takeaways
-
-
-    _takeaways = """
+def _(mo):
+    mo.md(
+        r"""
     Key Polars Concepts Summary:
 
     1. DataFrame: 2D table structure (rows & columns)
@@ -634,20 +576,8 @@ def _():
     - df.with_columns() for adding/modifying columns
     - df.group_by().agg() for aggregations
     - Chain methods together for complex operations
-
-    Next steps:
-    - Learn about expressions and lazy evaluation
-    - Explore advanced aggregations and window functions
-    - Practice with real datasets
     """
-
-    print(_takeaways)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r""" """)
+    )
     return
 
 
@@ -681,20 +611,36 @@ def _(mo):
         r"""
     ## 5. String & Date Operations
 
-    String methods: `str.to_lowercase()`, `str.contains()`, `str.replace()`
+    String methods: ```str.to_lowercase(), str.contains(), str.replace(), str.len_chars()```
 
-    Date parsing: `str.strptime()`, `str.to_date()`
+    Date parsing: ```str.strptime(), str.to_date()```
 
-    Date manipulation: `dt.year()`, `dt.month()`, date arithmetic, strptime(), strftime()
+    Date manipulation: ```dt.year(), dt.month(), date arithmetic, strptime(), strftime()```
     """
     )
     return
 
 
 @app.cell
-def _(df, pl):
+def _():
+    return
+
+
+@app.cell
+def _(pl, store_sales_df):
+    # Display zip codes that likely had leading zeros 
+    (store_sales_df
+        .filter(pl.col('Postal Code').str
+            .len_chars()<5)['Postal Code']
+        .unique()
+        .sort())
+    return
+
+
+@app.cell
+def _(pl, store_sales_df):
     # Keep original string column while creating parsed version
-    df_sales = df.with_columns([
+    df_sales = store_sales_df.with_columns([
         pl.col("Order Date")
         .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
         .alias("Order Date Parsed")
@@ -709,7 +655,7 @@ def _(df, pl):
     print(f"Rows that failed to parse: {len(parse_failures)}")
     print(parse_failures.select(["Order Date", "Order Date Parsed"]))
     print(parse_failures.select(["Order Date", "Order Date Parsed"]))
-    return
+    return (df_sales,)
 
 
 @app.cell
@@ -782,13 +728,44 @@ def _(mo):
         r"""
     ## 10. Conditional Logic
 
-    `when().then().otherwise()` chains
+    ```when().then().otherwise()``` chains
 
     Complex conditional transformations
 
-    `pl.lit()` for literal values
+    ```pl.lit()``` for literal values
+
+    * **Order matters**: Conditions are evaluated top-to-bottom, and the first matching condition wins
+    * **Always use** ```.alias()```: Give your new column a name
+    * **Use with** ```.with_columns()```: This adds/modifies columns in your dataframe
+    * **Conditions must return boolean**: Use comparison operators like >, <, ==, !=
+    * **Combine conditions**: Use & (AND), | (OR), ~ (NOT) for complex logic
+    * **Parentheses required**: When combining conditions, wrap each in parentheses: (cond1) & (cond2)
     """
     )
+    return
+
+
+@app.cell
+def _(df_sales, pl):
+    df_sales.with_columns(
+        pl.when(pl.col('Sales')>1000)
+        .then(pl.lit('High'))
+        .otherwise(pl.lit('Low'))
+        .alias('Sales Level')
+    )[['Sales', 'Sales Level']]
+    return
+
+
+@app.cell
+def _(df_sales, pl):
+    df_sales.with_columns(
+        pl.when(pl.col('Sales') > 4000)
+        .then(pl.lit('High'))
+        .when(pl.col('Sales') > 1000)
+            .then(pl.lit('Med'))
+        .otherwise(pl.lit('Low'))
+        .alias('Sales_level')
+    )['Sales_level'].value_counts()
     return
 
 
