@@ -606,6 +606,57 @@ def _(mo):
 
 
 @app.cell
+def _(df_grades):
+    df_grades.columns
+    return
+
+
+@app.cell
+def _(pl):
+    df_grades = pl.read_excel('data/grades.xlsx')
+
+    # sum quiz points
+    grades_with_totals = df_grades.with_columns([
+        pl.mean_horizontal('essay_1','essay_2','essay_3').round(0).alias('avg_essay'),
+        pl.mean_horizontal(pl.selectors.contains('quiz')).round(0).alias('avg_quiz'), # could import pl.selectors as cs instead
+        pl.mean_horizontal(pl.selectors.contains('exam')).round(0).alias('avg_exam'),
+        pl.mean_horizontal(pl.selectors.numeric()).round(0).alias('non-weighted_avg'),
+
+        # Worst quiz score
+        pl.min_horizontal(pl.selectors.contains('quiz')).alias('worst_quiz'),
+    
+        # Worst essay score
+        pl.min_horizontal(pl.selectors.contains('essay')).alias('worst_essay'),
+    
+        # Worst exam score
+        pl.min_horizontal(pl.selectors.contains('exam')).alias('worst_exam'),
+    
+        # Worst score overall
+        pl.min_horizontal(pl.selectors.numeric()).alias('worst_score_overall')
+    
+    ]).with_columns([
+        # Weighted final grade: 20% quizzes, 30% essays, 20% midterm, 30% final
+        (
+            pl.col('avg_quiz') * 0.20 +
+            pl.col('avg_essay') * 0.30 +
+            pl.col('midterm_exam') * 0.20 +
+            pl.col('final_exam') * 0.30
+        ).round(2).alias('final_grade')
+    ]).with_columns([
+        # Assign letter grades
+        pl.when(pl.col('final_grade') >= 90).then(pl.lit('A'))
+        .when(pl.col('final_grade') >= 80).then(pl.lit('B'))
+        .when(pl.col('final_grade') >= 70).then(pl.lit('C'))
+        .when(pl.col('final_grade') >= 60).then(pl.lit('D'))
+        .otherwise(pl.lit('F'))
+        .alias('letter_grade')
+    ])
+    grades_with_totals
+    # grades_with_totals[['avg_essay', 'avg_quiz','avg_exam','non-weighted_avg']]
+    return (df_grades,)
+
+
+@app.cell
 def _(mo):
     mo.md(
         r"""
