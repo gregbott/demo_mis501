@@ -213,6 +213,27 @@ def _(mo):
 
     ### dtypes
 
+    Most Commonly Used:
+
+    Integers: pl.Int64, pl.Int32
+    Floats: pl.Float64
+    Text: pl.String
+    Dates: pl.Date, pl.Datetime
+    Boolean: pl.Boolean
+
+    Aliases:
+
+    * ```pl.Int = pl.Int64```
+    * ```pl.Float = pl.Float64```
+    * ```pl.Utf8 = pl.String```
+
+    Rule of thumb for currency values:
+    * Analytics/reporting/visualizations → Float64
+    * Accounting/invoicing/legal compliance → Decimal
+    * High-frequency trading/mission-critical → Store as integer cents
+
+    For your sales forecasting data, pl.Float64 is probably the best choice unless you have specific requirements for exact decimal arithmetic.
+
 
     ### schema_overrides
     Polars
@@ -237,7 +258,7 @@ def _(pl):
 
     sales_file_path = './stores_sales_forecasting.csv'
 
-    # store_sales_df = pl.read_csv(sales_file_path) # First attempt
+    # store_sales_df = pl.read_csv(sales_file_path) # First attempt - ERROR, 0 rows
 
     # Second attempt
     store_sales_df = (pl.read_csv(sales_file_path,
@@ -255,6 +276,12 @@ def _(pl):
 
     store_sales_df.shape
     return sales_file_path, store_sales_df
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""### How to determine encoding""")
+    return
 
 
 @app.cell
@@ -329,6 +356,18 @@ def _(mo):
 
 @app.cell
 def _(store_sales_df):
+    store_sales_df["Segment"].unique()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""### Get count of unique values""")
+    return
+
+
+@app.cell
+def _(store_sales_df):
     store_sales_df["Segment"].value_counts()
     return
 
@@ -346,16 +385,8 @@ def _(store_sales_df):
 
 
 @app.cell
-def _(pl, store_sales_df):
-    clean_stores = (
-        store_sales_df
-        .with_columns(pl.when(pl.col('Postal Code').str.len_chars()<5)
-        .then(pl.col('Postal Code').str.zfill(5))
-        .otherwise(pl.col('Postal Code'))
-        .alias('Postal Code'))
-    )
-    clean_stores.filter(pl.col('Postal Code').str.starts_with('0'))
-    return (clean_stores,)
+def _():
+    return
 
 
 @app.cell
@@ -509,7 +540,8 @@ def _(pl, store_sales_df):
 
 @app.cell
 def _(store_sales_df):
-    round(store_sales_df['Sales'].sum(),3) # Using this syntax results in a float, which does NOT have a round() method
+    # Using this syntax results in a float, which does NOT have a .round() method, so we wrap the statement in the round() function and specify the number of digits precision after the decimal point.
+    round(store_sales_df['Sales'].sum(),3) 
     return
 
 
@@ -528,6 +560,17 @@ def _(store_sales_df):
 @app.cell
 def _(mo):
     mo.md(r"""Adding and Modifying Columns""")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    # List average sale and profit by category
+    Include a count of items.
+    """
+    )
     return
 
 
@@ -553,31 +596,6 @@ def _(pl, store_sales_df):
     )
 
     print(_chained_result)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-    Key Polars Concepts Summary:
-
-    1. DataFrame: 2D table structure (rows & columns)
-    2. Series: 1D column structure  
-    3. No Index: Rows identified by position only
-    4. Lazy Evaluation: Use scan_* functions for large datasets
-    5. Expressions: Use pl.col() for column references
-    6. Method Chaining: Operations can be chained together
-    7. Performance: Built for speed with Rust backend
-
-    Common patterns:
-    - df.select() for column selection
-    - df.filter() for row filtering  
-    - df.with_columns() for adding/modifying columns
-    - df.group_by().agg() for aggregations
-    - Chain methods together for complex operations
-    """
-    )
     return
 
 
@@ -624,16 +642,16 @@ def _(pl):
 
         # Worst quiz score
         pl.min_horizontal(pl.selectors.contains('quiz')).alias('worst_quiz'),
-    
+
         # Worst essay score
         pl.min_horizontal(pl.selectors.contains('essay')).alias('worst_essay'),
-    
+
         # Worst exam score
         pl.min_horizontal(pl.selectors.contains('exam')).alias('worst_exam'),
-    
+
         # Worst score overall
         pl.min_horizontal(pl.selectors.numeric()).alias('worst_score_overall')
-    
+
     ]).with_columns([
         # Weighted final grade: 20% quizzes, 30% essays, 20% midterm, 30% final
         (
@@ -674,13 +692,64 @@ def _(mo):
 
 @app.cell
 def _():
+    # Grok this!! "Grok, create a Python dictionary with two-digit state abbreviations as the key and the full state name as the value."
+    state_abbrev = {
+        'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+        'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+        'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+        'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+        'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+        'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+        'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+        'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+        'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+        'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+        'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+        'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+        'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia'
+    }
+    return (state_abbrev,)
+
+
+@app.cell
+def _(pl, state_abbrev):
+    df_sales2 = pl.read_csv('data/stores_sales_forecasting2.csv',
+                           encoding='cp1252')
+    df_sales2 = df_sales2.with_columns(
+        pl.col('State')
+            .replace_strict(state_abbrev, default=pl.col('State')),
+        pl.col('Sales')
+            .cast(pl.String) # Ensure it's a string so we can run replace_all/Regex on it
+            .str.replace_all(r'[^\d.-]', '')  # Remove all non-numeric characters except digits, decimal, and minus
+            .cast(pl.Decimal, strict=False) # Convert to float, True - raises error, Fales-non-convertible become null
+            .alias('Sales'), # If changing in-place, this is not necessary, included for readability,
+        pl.col('Profit')
+            .cast(pl.Decimal),
+        # pl.col("Order Date") # First attempt: ERROR: doesn't convert the MMM d, YYYY format
+        #     .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
+        #     .alias("Order Date Parsed"), # making a new column so that we can compare old and new
+        pl.coalesce([
+            pl.col('Order Date').str.strptime(pl.Date, format="%m/%d/%Y", strict=False), # Consider creating a function for this that includes all common date formats being careful to discren non-US formats
+            pl.col('Order Date').str.strptime(pl.Date, format="%B %d, %Y", strict=False)
+        ]).alias('Order Date'),
+        pl.col('Postal Code')
+            .cast(pl.String)
+            .str.zfill(5)
+            .alias('Postal Code')
+    )
+    return (df_sales2,)
+
+
+@app.cell
+def _(df_sales2):
+    df_sales2.glimpse()
     return
 
 
 @app.cell
-def _(pl, store_sales_df):
+def _(df_sales2, pl):
     # Display zip codes that likely had leading zeros 
-    (store_sales_df
+    (df_sales2
         .filter(pl.col('Postal Code').str
             .len_chars()<5)['Postal Code']
         .unique()
@@ -689,16 +758,16 @@ def _(pl, store_sales_df):
 
 
 @app.cell
-def _(pl, store_sales_df):
+def _(df_sales2, pl):
     # Keep original string column while creating parsed version
-    df_sales = store_sales_df.with_columns([
-        pl.col("Order Date")
-        .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
-        .alias("Order Date Parsed")
-    ])
+    # df_sales = store_sales_df.with_columns([
+    #     pl.col("Order Date")
+    #     .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
+    #     .alias("Order Date Parsed")
+    # ])
 
     # Filter for nulls in parsed column (these are failures)
-    parse_failures = df_sales.filter(
+    parse_failures = df_sales2.filter(
         pl.col("Order Date Parsed").is_null() & 
         pl.col("Order Date").is_not_null()  # Original had a value
     )
@@ -706,7 +775,7 @@ def _(pl, store_sales_df):
     print(f"Rows that failed to parse: {len(parse_failures)}")
     print(parse_failures.select(["Order Date", "Order Date Parsed"]))
     print(parse_failures.select(["Order Date", "Order Date Parsed"]))
-    return (df_sales,)
+    return
 
 
 @app.cell
@@ -797,8 +866,8 @@ def _(mo):
 
 
 @app.cell
-def _(df_sales, pl):
-    df_sales.with_columns(
+def _(df_sales2, pl):
+    df_sales2.with_columns(
         pl.when(pl.col('Sales')>1000)
         .then(pl.lit('High'))
         .otherwise(pl.lit('Low'))
@@ -868,6 +937,31 @@ def _(mo):
 
 @app.cell
 def _():
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    # Key Polars Concepts Summary:
+
+    1. DataFrame: 2D table structure (rows & columns)
+    2. Series: 1D column structure  
+    3. No Index: Rows identified by position only
+    4. Lazy Evaluation: Use scan_* functions for large datasets
+    5. Expressions: Use pl.col() for column references
+    6. Method Chaining: Operations can be chained together
+    7. Performance: Built for speed with Rust backend
+
+    Common patterns:
+    - ```df.select()``` for column selection
+    - ```df.filter()``` for row filtering  
+    - ```df.with_columns()``` for adding/modifying columns
+    - ```df.group_by().agg()``` for aggregations
+    - Chain methods together for complex operations
+    """
+    )
     return
 
 
