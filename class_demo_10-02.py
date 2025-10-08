@@ -127,7 +127,7 @@ def _(df, pl):
 @app.cell
 def _(df, pl):
     # Select with wildcards
-    df.select(pl.col('^Customer.*'))  # All columns starting with "Customer"
+    df.select(pl.col('^Customer*'))  # All columns starting with "Customer"
     return
 
 
@@ -187,7 +187,12 @@ def _(df, pl):
     # Filter by exact match
     df.filter(pl.col('Region') == 'South')
     df.filter(pl.col('Ship Mode') == 'First Class')
+    df.select('Order Date','Customer Name','Region','Ship Mode').sort('Customer Name')
+    return
 
+
+@app.cell
+def _(df, pl):
     # Filter by numeric comparison
     df.filter(pl.col('Sales') > 1000)
     df.filter(pl.col('Profit') < 0)  # Loss-making orders

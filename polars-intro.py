@@ -446,11 +446,6 @@ def _(mo):
 
 
 @app.cell
-def _():
-    return
-
-
-@app.cell
 def _(store_sales_df):
     _single_col_df = store_sales_df.select("Customer Name") #.select() returns a dataframe, not a series
     print(type(_single_col_df))
@@ -493,13 +488,13 @@ def _(pl, store_sales_df):
 
 @app.cell
 def _(mo):
-    mo.md(r"""# Sorting and Grouping""")
+    mo.md(r"""## Sorting and Grouping""")
     return
 
 
 @app.cell
 def _(mo):
-    mo.md(r"""# Grouping and aggregation""")
+    mo.md(r"""## Grouping and aggregation""")
     return
 
 
@@ -567,7 +562,7 @@ def _(mo):
 def _(mo):
     mo.md(
         r"""
-    # List average sale and profit by category
+    ### List average sale and profit by category
     Include a count of items.
     """
     )
@@ -626,6 +621,12 @@ def _(mo):
 @app.cell
 def _(df_grades):
     df_grades.columns
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""### Analyze Grades""")
     return
 
 
@@ -709,6 +710,12 @@ def _():
         'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia'
     }
     return (state_abbrev,)
+
+
+@app.cell
+def _():
+    print("hello\nworld")
+    return
 
 
 @app.cell
