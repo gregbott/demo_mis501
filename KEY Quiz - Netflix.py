@@ -27,7 +27,7 @@ def _():
         raw_data = response.content
         sample = raw_data[:sample_size]
         result = chardet.detect(sample)
-    
+
         return result
     return
 
@@ -39,7 +39,6 @@ def _(mo):
     ## Task 1 - Ingest the Netflix data. What is the shape of the data?
     Number of columns: 26
     Number of rows: 8809
-
     """
     )
     return
@@ -67,7 +66,6 @@ def _(netflix_url, pl):
     df = pl.read_csv(netflix_url, encoding='latin-1')
     print(df.shape)
     df = df.drop(columns_to_drop)
-
     return (df,)
 
 

@@ -9,7 +9,7 @@ def _():
     import marimo as mo
     import polars as pl
 
-    sales_url =   'https://raw.githubusercontent.com/gregbott/data_501/master/stores_sales_forecasting.parquet'
+    sales_url = 'https://raw.githubusercontent.com/gregbott/data_501/master/stores_sales_forecasting.parquet'
     return pl, sales_url
 
 

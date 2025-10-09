@@ -41,7 +41,7 @@ def _(mo):
 
         Number of columns: 
 
-        Number of rows: 
+        Number of rows:
     """
     )
     return
@@ -55,8 +55,7 @@ def _(mo):
 
     Question: Which columns should you modify and why?
 
-    Answer: 
-
+    Answer:
     """
     )
     return
@@ -100,7 +99,7 @@ def _(mo):
     ### Task 3.3
     What year had the most releases (how many, if a tie, state the most recent year)? 
 
-    Answer: 
+    Answer:
     """
     )
     return
@@ -113,7 +112,7 @@ def _(mo):
     ### Task 3.4
     What year had the fewest releases (how many, if a tie, state the most recent year)? 
 
-    Answer: 
+    Answer:
     """
     )
     return
@@ -126,7 +125,7 @@ def _(mo):
     ### Task 3.5
     What was the average number of releases per year (round to 1 digit of precision)? 
 
-    Answer: 
+    Answer:
     """
     )
     return
