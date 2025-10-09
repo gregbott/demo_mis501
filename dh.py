@@ -1,0 +1,157 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# Alice and Bob agree on two positive integers p and q.
+# 
+# Note: p must be a prime number, and q must be a generator of p.
+
+# In[6]:
+
+
+# Constants used--shared clear text EVE is the eavesdropper
+q = 11 # generator
+p = 54111 # prime
+
+# Each person chooses a number between 1 and 100 (NOT shared with anyone)
+alice_secret = 144 # ONLY Alice knows this number
+bob_secret = 15 # ONLY Bob knows this number
+
+# Alice computes the remainder using g rasied to her secret number mod p
+alice_shared = q**alice_secret % p
+print(f'Alice gives Bob this number: {q}^{alice_secret} % {p} = {alice_shared}\n')
+
+
+# In[7]:
+
+
+# Bob also computes the remainder using g rasied to his secret number mod p
+bob_shared = q**bob_secret % p
+print(f'Bob gives Alice this number: {bob_shared}\n')
+# Bob and Alice share A and B with each other.
+
+
+# In[8]:
+
+
+# Alice and bob each compute the shared key she and Bob can use to share files
+key_for_alice = bob_shared**alice_secret % p
+
+
+# In[9]:
+
+
+key_for_bob = alice_shared**bob_secret % p
+
+
+# In[10]:
+
+
+key_for_bob
+
+
+# In[11]:
+
+
+print(f"Bob's shared key, {key_for_bob} = {key_for_alice}, Alice's shared key")
+
+
+# In[ ]:
+
+
+# Constants used--shared clear text
+g = 11 # generator
+p = 5411 # prime
+
+# My partner and I choose a number between 1 and 100 (NOT shared with anyone)
+my_secret = 7  # Only I know this number
+
+# I computes the remainder using g rasied to my secret number mod p
+my_shared = g**my_secret % p
+print(my_shared)
+
+
+# In[ ]:
+
+
+# I share the my_shared value with my partner
+
+# My partner shares their number with me
+partner_shared =  2381   # Enter the number after the equal sign
+
+# My partner and I compute the shared key we can use for encryption, etc.
+shared_key = partner_shared**my_secret % p
+
+print("Shared key = ", shared_key)
+print("Enter the key twice to open the secret document: ", str(shared_key)*2)
+
+
+# In[ ]:
+
+
+# Constants used--shared clear text
+g = 11 # generator
+p = 5411 # prime
+
+# My partner and I choose a number between 1 and 100 (NOT shared with anyone)
+my_secret = 13 # Only I know this number
+
+# I computes the remainder using g rasied to my secret number mod p
+my_shared = g**my_secret % p
+print(my_shared)
+
+
+# In[ ]:
+
+
+# I share the my_shared value with my partner
+
+# My partner shares their number with me
+partner_shared = 4547    # Enter the number after the equal sign
+
+# My partner and I compute the shared key we can use for encryption, etc.
+shared_key = partner_shared**my_secret % p
+
+print("Shared key = ", shared_key)
+print("Enter the key twice to open the secret document: ", str(shared_key)*2)
+
+
+# In[ ]:
+
+
+from tqdm import tqdm
+def discrete_logarithm_brute_force(g, h, p):
+    """
+    Solves the discrete logarithm problem using brute force:
+    Find x such that g^x ≡ h (mod p)
+    
+    Parameters:
+    g: Base (primitive root modulo p)
+    h: Result (g^x mod p = h)
+    p: Modulus (prime number)
+    
+    Returns:
+    x: The discrete logarithm (x) such that g^x ≡ h (mod p)
+    """
+    for x in tqdm(range(p)):
+        if pow(g, x, p) == h:  # Efficient modular exponentiation
+            return x
+    return None  # If no solution is found
+
+# Example usage
+g = 11  # base
+h = 32437  # result of g^x mod p
+p = 54111  # prime modulus
+
+x = discrete_logarithm_brute_force(g, h, p)
+
+if x is not None:
+    print(f"Discrete logarithm found: x = {x}")
+else:
+    print("No solution found.")
+
+
+# In[ ]:
+
+
+
+
