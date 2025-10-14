@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.3"
+__generated_with = "0.16.2"
 app = marimo.App(width="medium")
 
 
@@ -390,8 +390,8 @@ def _():
 
 
 @app.cell
-def _(clean_stores, pl):
-    clean_stores.filter(pl.col('Postal Code').str.starts_with('0'))['Postal Code'].unique().sort()
+def _():
+    # clean_stores.filter(pl.col('Postal Code').str.starts_with('0'))['Postal Code'].unique().sort()
     return
 
 
@@ -528,6 +528,27 @@ def _(pl, store_sales_df):
 
 
 @app.cell
+def _(df_sales2, pl):
+    # Total sales by region
+    df_sales2.group_by('Region').agg(pl.col('Sales').sum())
+    return
+
+
+@app.cell
+def _(df_sales2, pl):
+    # Average sales by category
+    df_sales2.group_by('Category').agg(pl.col('Sales').mean())
+    return
+
+
+@app.cell
+def _(df_sales2, pl):
+    # Count orders by ship mode
+    df_sales2.group_by('Ship Mode').agg(pl.len().alias('count'))
+    return
+
+
+@app.cell
 def _(pl, store_sales_df):
     store_sales_df.select(pl.col('Sales').sum().round(3)) # The DataFrame object has a round() method
     return
@@ -620,7 +641,7 @@ def _(mo):
 
 @app.cell
 def _(df_grades):
-    df_grades.columns
+    df_grades.glimpse()
     return
 
 
@@ -695,19 +716,19 @@ def _(mo):
 def _():
     # Grok this!! "Grok, create a Python dictionary with two-digit state abbreviations as the key and the full state name as the value."
     state_abbrev = {
-        'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
-        'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
-        'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
-        'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
-        'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
-        'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
-        'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
-        'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
-        'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
-        'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
-        'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
-        'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
-        'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia'
+        'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+        'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+        'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+        'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+        'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+        'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+        'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+        'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+        'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+        'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+        'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+        'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+        'Wisconsin': 'WI', 'Wyoming': 'WY', 'District of Columbia': 'DC'
     }
     return (state_abbrev,)
 
@@ -719,12 +740,19 @@ def _():
 
 
 @app.cell
-def _(pl, state_abbrev):
+def _():
+    state_corrections = {'Californya':'CA'}
+    return (state_corrections,)
+
+
+@app.cell
+def _(pl, state_abbrev, state_corrections):
     df_sales2 = pl.read_csv('data/stores_sales_forecasting2.csv',
                            encoding='cp1252')
     df_sales2 = df_sales2.with_columns(
         pl.col('State')
-            .replace_strict(state_abbrev, default=pl.col('State')),
+            .replace_strict(state_abbrev, default=pl.col('State')) # _strict leaves value unchanged
+            .replace_strict(state_corrections, default=pl.col('State')),
         pl.col('Sales')
             .cast(pl.String) # Ensure it's a string so we can run replace_all/Regex on it
             .str.replace_all(r'[^\d.-]', '')  # Remove all non-numeric characters except digits, decimal, and minus
@@ -732,13 +760,13 @@ def _(pl, state_abbrev):
             .alias('Sales'), # If changing in-place, this is not necessary, included for readability,
         pl.col('Profit')
             .cast(pl.Decimal),
-        # pl.col("Order Date") # First attempt: ERROR: doesn't convert the MMM d, YYYY format
+        # pl.col("Order Date") # ERROR: This fails because there are two date formats and only one is accounted for
         #     .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
         #     .alias("Order Date Parsed"), # making a new column so that we can compare old and new
         pl.coalesce([
-            pl.col('Order Date').str.strptime(pl.Date, format="%m/%d/%Y", strict=False), # Consider creating a function for this that includes all common date formats being careful to discren non-US formats
+            pl.col('Order Date').str.strptime(pl.Date, format="%m/%d/%Y", strict=False), # # Consider creating a function for this that includes all common date formats being careful to discren non-US formats
             pl.col('Order Date').str.strptime(pl.Date, format="%B %d, %Y", strict=False)
-        ]).alias('Order Date'),
+        ]).alias('Order Date Parsed'),
         pl.col('Postal Code')
             .cast(pl.String)
             .str.zfill(5)
@@ -750,6 +778,12 @@ def _(pl, state_abbrev):
 @app.cell
 def _(df_sales2):
     df_sales2.glimpse()
+    return
+
+
+@app.cell
+def _(df_sales2):
+    df_sales2['State'].unique().sort()
     return
 
 
@@ -814,6 +848,54 @@ def _(mo):
     Ranking: `rank()`, `row_number()`
     """
     )
+    return
+
+
+@app.cell
+def _(df_grades, pl):
+    df_grades_ranking = df_grades.with_columns([
+        pl.col('final_exam').rank(method='average', descending=True).alias('rank_average'),
+        pl.col('final_exam').rank(method='min', descending=True).alias('rank_min'),
+        pl.col('final_exam').rank(method='max', descending=True).alias('rank_max'),
+        pl.col('final_exam').rank(method='dense', descending=True).alias('rank_dense'),
+        pl.col('final_exam').rank(method='ordinal', descending=True).alias('rank_ordinal')
+    ])
+    return (df_grades_ranking,)
+
+
+@app.cell
+def _(df_grades_ranking):
+    df_grades_ranking.columns
+    return
+
+
+@app.cell
+def _(df_grades_ranking):
+    df_grades_ranking[['first_name','final_exam','rank_min']].sort('rank_min')
+    return
+
+
+@app.cell
+def _(df_grades_ranking):
+    df_grades_ranking[['first_name','final_exam','rank_max']].sort('rank_max')
+    return
+
+
+@app.cell
+def _(df_grades_ranking):
+    df_grades_ranking[['first_name','final_exam','rank_dense']].sort('rank_dense')
+    return
+
+
+@app.cell
+def _(df_grades_ranking):
+    df_grades_ranking[['first_name','final_exam','rank_ordinal']].sort('rank_ordinal')
+    return
+
+
+@app.cell
+def _(df_grades_ranking):
+    df_grades_ranking[['first_name','final_exam','rank_average']].sort('rank_average')
     return
 
 
@@ -884,8 +966,8 @@ def _(df_sales2, pl):
 
 
 @app.cell
-def _(df_sales, pl):
-    df_sales.with_columns(
+def _(df_sales2, pl):
+    df_sales2.with_columns(
         pl.when(pl.col('Sales') > 4000)
         .then(pl.lit('High'))
         .when(pl.col('Sales') > 1000)
