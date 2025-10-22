@@ -697,22 +697,6 @@ def _(pl):
 
 
 @app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 5. String & Date Operations
-
-    String methods: ```str.to_lowercase(), str.contains(), str.replace(), str.len_chars()```
-
-    Date parsing: ```str.strptime(), str.to_date()```
-
-    Date manipulation: ```dt.year(), dt.month(), date arithmetic, strptime(), strftime()```
-    """
-    )
-    return
-
-
-@app.cell
 def _():
     # Grok this!! "Grok, create a Python dictionary with two-digit state abbreviations as the key and the full state name as the value."
     state_abbrev = {
@@ -776,68 +760,6 @@ def _(pl, state_abbrev, state_corrections):
 
 
 @app.cell
-def _(df_sales2):
-    df_sales2.glimpse()
-    return
-
-
-@app.cell
-def _(df_sales2):
-    df_sales2['State'].unique().sort()
-    return
-
-
-@app.cell
-def _(df_sales2, pl):
-    # Display zip codes that likely had leading zeros 
-    (df_sales2
-        .filter(pl.col('Postal Code').str
-            .len_chars()<5)['Postal Code']
-        .unique()
-        .sort())
-    return
-
-
-@app.cell
-def _(df_sales2, pl):
-    # Keep original string column while creating parsed version
-    # df_sales = store_sales_df.with_columns([
-    #     pl.col("Order Date")
-    #     .str.strptime(pl.Date, format="%m/%d/%Y", strict=False)
-    #     .alias("Order Date Parsed")
-    # ])
-
-    # Filter for nulls in parsed column (these are failures)
-    parse_failures = df_sales2.filter(
-        pl.col("Order Date Parsed").is_null() & 
-        pl.col("Order Date").is_not_null()  # Original had a value
-    )
-
-    print(f"Rows that failed to parse: {len(parse_failures)}")
-    print(parse_failures.select(["Order Date", "Order Date Parsed"]))
-    print(parse_failures.select(["Order Date", "Order Date Parsed"]))
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 6. Aggregations & Grouping
-
-    Basic aggregations: `sum()`, `mean()`, `min()`, `max()`, `count()`
-
-    Grouping: `group_by()` + `agg()`
-
-    Multiple aggregations at once
-
-    Window functions
-    """
-    )
-    return
-
-
-@app.cell
 def _(mo):
     mo.md(
         r"""
@@ -860,7 +782,35 @@ def _(df_grades, pl):
         pl.col('final_exam').rank(method='dense', descending=True).alias('rank_dense'),
         pl.col('final_exam').rank(method='ordinal', descending=True).alias('rank_ordinal')
     ])
+    df_grades_ranking['final_exam', 'rank_average', 'rank_min', 'rank_max', 'rank_dense', 'rank_ordinal'].sort('final_exam',descending=True)
     return (df_grades_ranking,)
+
+
+@app.cell
+def _(df_sales2):
+    df_sales2['State'].unique().sort()
+    return
+
+
+@app.cell
+def _(df_sales2, pl):
+    # Display zip codes that likely had leading zeros 
+    (df_sales2
+        .filter(pl.col('Postal Code').str
+            .len_chars()<5)['Postal Code']
+        .unique()
+        .sort())
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _():
+    return
 
 
 @app.cell
@@ -900,61 +850,6 @@ def _(df_grades_ranking):
 
 
 @app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 8. Joins & Concatenation
-
-    Join types: `join()` (inner, left, outer, cross, semi, anti)
-
-    Concatenating: `pl.concat()` (vertical/horizontal)
-
-    Union operations
-    """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 9. Reshaping Data
-
-    Pivoting: `pivot()`
-
-    Melting: `melt()` (wide to long)
-
-    Exploding lists: `explode()`
-    """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 10. Conditional Logic
-
-    ```when().then().otherwise()``` chains
-
-    Complex conditional transformations
-
-    ```pl.lit()``` for literal values
-
-    * **Order matters**: Conditions are evaluated top-to-bottom, and the first matching condition wins
-    * **Always use** ```.alias()```: Give your new column a name
-    * **Use with** ```.with_columns()```: This adds/modifies columns in your dataframe
-    * **Conditions must return boolean**: Use comparison operators like >, <, ==, !=
-    * **Combine conditions**: Use & (AND), | (OR), ~ (NOT) for complex logic
-    * **Parentheses required**: When combining conditions, wrap each in parentheses: (cond1) & (cond2)
-    """
-    )
-    return
-
-
-@app.cell
 def _(df_sales2, pl):
     df_sales2.with_columns(
         pl.when(pl.col('Sales')>1000)
@@ -975,57 +870,6 @@ def _(df_sales2, pl):
         .otherwise(pl.lit('Low'))
         .alias('Sales_level')
     )['Sales_level'].value_counts()
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 11. Missing Data
-
-    Detecting: `is_null()`, `is_not_null()`, `null_count()`
-
-    Handling: `fill_null()`, `drop_nulls()`, `forward_fill()`, `backward_fill()`
-    """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 12. Advanced Topics
-
-    Lazy evaluation: `pl.LazyFrame`, `collect()`, query optimization
-
-    Custom functions: `map_elements()` (use sparingly!)
-
-    List columns: nested data structures
-
-    Performance optimization techniques
-    """
-    )
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(
-        r"""
-    ## 13. I/O & Export
-
-    Writing: `write_csv()`, `write_parquet()`, `write_excel()`
-
-    Interoperability: converting to/from pandas, numpy, arrow
-    """
-    )
-    return
-
-
-@app.cell
-def _():
     return
 
 
