@@ -12,7 +12,8 @@ def _():
     import plotly.express as px
     sns.set_style('darkgrid') #'darkgrid' or 'whitegrid'
     import matplotlib.pyplot as plt
-    return mo, pl, plt, px, sns
+    import plotly.graph_objects as go
+    return go, mo, pl, plt, px, sns
 
 
 @app.cell
@@ -211,6 +212,109 @@ def _(px, unique_observations_by_month):
 
 
 @app.cell
+def _():
+    # Define days in each month (non-leap year)
+    # days_in_month = {
+    #     1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
+    #     7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
+    # }
+
+    # unique_observations_by_month_std = (
+    #     df2.group_by('month')
+    #     .agg(pl.col('ID').n_unique().alias('unique_ids'))
+    #     .sort('month')
+    #     .with_columns(
+    #         pl.col('month').replace_strict(days_in_month, default=None).cast(pl.Int32).alias('days_in_month'),
+    #         (pl.col('unique_ids') / pl.col('month').replace_strict(days_in_month, default=None).cast(pl.Int32)).alias('normalized_crimes')
+    #     )
+    # )
+
+    # fig_std = px.bar(unique_observations_by_month_std, 
+    #               x='month', 
+    #               y='normalized_crimes',
+    #               title='Unique Crimes by Month',
+    #               labels={'ID': 'Number of Unique Crimes', 'Month': 'Month'},
+    #               # markers=True
+    #             )  # Add markers to points
+
+    # fig_std.show()
+    return
+
+
+@app.cell
+def _(df2, go, pl):
+    # Define days in each month (non-leap year)
+    days_in_month = {
+        1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
+        7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
+    }
+
+    # Chicago monthly average temperature with wind chill (°F)
+    chicago_monthly_avg_temp_with_windchill = {
+        1: 23.3, 2: 27.0, 3: 37.7, 4: 48.0, 5: 58.4, 6: 68.4,
+        7: 73.7, 8: 72.5, 9: 66.2, 10: 53.6, 11: 39.9, 12: 29.6
+    }
+
+    # Process crime data
+    unique_observations_by_month_temp = (
+        df2.group_by('month')
+        .agg(pl.col('ID').n_unique().alias('unique_ids'))
+        .sort('month')
+        .with_columns(
+            pl.col('month').replace_strict(days_in_month, default=None).cast(pl.Int32).alias('days_in_month'),
+            (pl.col('unique_ids') / pl.col('month').replace_strict(days_in_month, default=None).cast(pl.Int32)).alias('normalized_crimes')
+        )
+    )
+
+    # Create chart with bar chart for crimes and line for temperature
+    fig_temp = go.Figure()
+
+    # Add normalized crimes bar chart
+    fig_temp.add_trace(
+        go.Bar(
+            x=unique_observations_by_month_temp['month'],
+            y=unique_observations_by_month_temp['normalized_crimes'],
+            name='Normalized Crimes per Day',
+            marker=dict(color='blue'),
+            yaxis='y1'
+        )
+    )
+
+    # Add temperature line
+    fig_temp.add_trace(
+        go.Scatter(
+            x=list(chicago_monthly_avg_temp_with_windchill.keys()),
+            y=list(chicago_monthly_avg_temp_with_windchill.values()),
+            name='Avg Temp with Wind Chill (°F)',
+            line=dict(color='red'),
+            yaxis='y2'
+        )
+    )
+
+    # Update layout for dual y-axes
+    fig_temp.update_layout(
+        title='Chicago Normalized Crime Rate (Bars) vs Average Temperature with Wind Chill (Line) by Month',
+        xaxis=dict(title='Month', 
+                   tickmode='array', 
+                   tickvals=list(range(1, 13))),
+        yaxis=dict(title='Normalized Crimes per Day', 
+                   title_font=dict(color='blue'), 
+                   tickfont=dict(color='blue')),
+        yaxis2=dict(title='Temperature (°F)', 
+                    title_font=dict(color='red'), 
+                    tickfont=dict(color='red'), 
+                    overlaying='y', 
+                    side='right', 
+                    range=[0, 100]),
+        legend=dict(x=0.1, y=1.1, orientation='h')
+    )
+
+    # Show the plot
+    fig_temp.show()
+    return
+
+
+@app.cell
 def _(df2, pl):
     crimes_year_month = (df2
                         .group_by('month_period')
@@ -287,7 +391,29 @@ def _(df2, pl, px):
 
 
 @app.cell
-def _():
+def _(mo):
+    mo.md(r"""## How has the total number of cases evolved over time?""")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## Which months are higher or lower for crime in Chicago?""")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ## How has the proportion of cases leading to an arrest changed over time?
+    How have ```Domestic``` crimes evolved over time?
+    How has the Primary Type of call evolved over time?
+    Are there any observable patterns in arrest rates by district?
+    Have any specific types of crime (```IUCR```s) changed dramatically over time?
+    How is crime affected by the hour of the day?
+    """
+    )
     return
 
 
