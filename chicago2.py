@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.3"
+__generated_with = "0.16.2"
 app = marimo.App(width="medium")
 
 
@@ -17,7 +17,7 @@ def _():
 
 @app.cell
 def _(pl):
-    df = pl.read_parquet('/mnt/expansion16TB/OnedriveUA/1_Projects/701-MIS 501 FL25/shared/student_shared/data/chicago_crime_2001_2025.parquet')
+    df = pl.read_parquet('data/chicago_crime_2001_2025.parquet')
     df.shape
     return (df,)
 
@@ -36,6 +36,12 @@ def _(mo):
 @app.cell
 def _(df):
     df.glimpse()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## Data Dictionary""")
     return
 
 
@@ -124,6 +130,12 @@ def _():
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""## Convert and Add New Columns for Analysis""")
+    return
+
+
+@app.cell
 def _(df, pl, plt, sns):
     df2 = df.with_columns(pl.col('Date').str.to_datetime('%m/%d/%Y %I:%M:%S %p')) # Note 'datetime', NOT 'date'
     print(df2.schema)
@@ -131,6 +143,7 @@ def _(df, pl, plt, sns):
         pl.col('Date').dt.year().alias('year'),
         pl.col('Date').dt.month().alias('month'),
         pl.col('Date').dt.truncate('1mo').cast(pl.Date).alias('month_period'),
+        pl.col('Date').dt.truncate('1q').cast(pl.Date).alias('quarter_period'),
         pl.col('Date').dt.day().alias('day'),
         pl.col('Date').dt.hour().alias('hour'),
         pl.col('Date').dt.minute().alias('minute'),
