@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.2"
+__generated_with = "0.16.3"
 app = marimo.App(width="medium")
 
 
@@ -13,7 +13,8 @@ def _():
     sns.set_style('darkgrid') #'darkgrid' or 'whitegrid'
     import matplotlib.pyplot as plt
     import plotly.graph_objects as go
-    return go, mo, pl, plt, px, sns
+    import numpy as np
+    return go, mo, np, pl, plt, px, sns
 
 
 @app.cell
@@ -197,6 +198,12 @@ def _(df2, pl):
 
 
 @app.cell
+def _(mo):
+    mo.md(r"""## Which months are higher or lower for crime in Chicago?""")
+    return
+
+
+@app.cell
 def _(px, unique_observations_by_month):
     # Which months typically have more crime?
     fig = px.bar(unique_observations_by_month, 
@@ -204,40 +211,44 @@ def _(px, unique_observations_by_month):
                   y='unique_ids',
                   title='Unique Crimes by Month',
                   labels={'ID': 'Number of Unique Crimes', 'Month': 'Month'},
-                  # markers=True
-                )  # Add markers to points
-
+                  text='unique_ids'  # Add this line
+                )
+    fig.update_traces(texttemplate='%{text:.0f}', textposition='outside')  # Changed to .0f for whole numbers
     fig.show()
     return
 
 
 @app.cell
-def _():
+def _(df2, pl, px):
     # Define days in each month (non-leap year)
-    # days_in_month = {
-    #     1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
-    #     7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
-    # }
+    _days_in_month = {
+        1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
+        7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
+    }
+    _unique_observations_by_month_std = (
+        df2.group_by('month')
+        .agg(pl.col('ID').n_unique().alias('unique_ids'))
+        .sort('month')
+        .with_columns(
+            pl.col('month').replace_strict(_days_in_month, default=None).cast(pl.Int64).alias('days_in_month'),
+            (pl.col('unique_ids') / pl.col('month').replace_strict(_days_in_month, default=None).cast(pl.Int32)).alias('normalized_crimes')
+        )
+    )
+    _fig_std = px.bar(_unique_observations_by_month_std, 
+                  x='month', 
+                  y='normalized_crimes',
+                  title='Unique Crimes by Month',
+                  labels={'ID': 'Number of Unique Crimes', 'Month': 'Month'},
+                  text='normalized_crimes'  # Add this line to display values
+                )
+    _fig_std.update_traces(texttemplate='%{text:.0f}', textposition='outside')  # Format and position the text
+    _fig_std.show()
+    return
 
-    # unique_observations_by_month_std = (
-    #     df2.group_by('month')
-    #     .agg(pl.col('ID').n_unique().alias('unique_ids'))
-    #     .sort('month')
-    #     .with_columns(
-    #         pl.col('month').replace_strict(days_in_month, default=None).cast(pl.Int32).alias('days_in_month'),
-    #         (pl.col('unique_ids') / pl.col('month').replace_strict(days_in_month, default=None).cast(pl.Int32)).alias('normalized_crimes')
-    #     )
-    # )
 
-    # fig_std = px.bar(unique_observations_by_month_std, 
-    #               x='month', 
-    #               y='normalized_crimes',
-    #               title='Unique Crimes by Month',
-    #               labels={'ID': 'Number of Unique Crimes', 'Month': 'Month'},
-    #               # markers=True
-    #             )  # Add markers to points
-
-    # fig_std.show()
+@app.cell
+def _(mo):
+    mo.md(r"""## How does temperature correlate with months?""")
     return
 
 
@@ -311,6 +322,35 @@ def _(df2, go, pl):
 
     # Show the plot
     fig_temp.show()
+    return (
+        chicago_monthly_avg_temp_with_windchill,
+        unique_observations_by_month_temp,
+    )
+
+
+@app.cell
+def _():
+    ## Check actual correlation
+    return
+
+
+@app.cell
+def _(
+    chicago_monthly_avg_temp_with_windchill,
+    pl,
+    unique_observations_by_month_temp,
+):
+    # Add temperature data to the dataframe
+    _unique_observations_by_month_temp = unique_observations_by_month_temp.with_columns(
+        pl.col('month').replace_strict(chicago_monthly_avg_temp_with_windchill, default=None).alias('temperature')
+    )
+
+    # Calculate correlation between temperature and normalized crimes
+    correlation = _unique_observations_by_month_temp.select(
+        pl.corr('temperature', 'normalized_crimes').alias('correlation')
+    ).item()
+
+    print(f"Correlation between temperature and normalized crimes: {correlation:.4f}")
     return
 
 
@@ -397,8 +437,78 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
-    mo.md(r"""## Which months are higher or lower for crime in Chicago?""")
+def _(df2):
+    df2.columns
+    return
+
+
+@app.cell
+def _(df2, pl, px):
+    # Group by date and count cases
+    cases_by_month = (
+        df2
+        .group_by("month_period")
+        .agg(pl.count().alias("Total_Cases"))
+        .sort("month_period")
+    )
+
+    # View the results
+    print(cases_by_month)
+
+    # Optional: Add cumulative sum to see total cases accumulated over time
+    # cases_over_time = cases_over_time.with_columns(
+    #     pl.col("Total_Cases").cum_sum().alias("Cumulative_Cases")
+    # )
+
+    print(cases_by_month)
+
+    _fig = px.line(cases_by_month, 
+                  x='month_period', 
+                  y='Total_Cases',
+                  title='Total Cases Over Time')
+    _fig.show()
+    return
+
+
+@app.cell
+def _(df2, pl, px):
+    # Group by date and count cases
+    cases_by_quarter = (
+        df2
+        .group_by("quarter_period")
+        .agg(pl.count().alias("Total_Cases"))
+        .sort("quarter_period")
+    )
+
+    # View the results
+    print(cases_by_quarter)
+
+    _fig = px.line(cases_by_quarter, 
+                  x='quarter_period', 
+                  y='Total_Cases',
+                  title='Total Cases By Quarter')
+    _fig.show()
+    return
+
+
+@app.cell
+def _(df2, pl, px):
+    # Group by date and count cases
+    cases_by_year = (
+        df2
+        .group_by("year")
+        .agg(pl.count().alias("Total_Cases"))
+        .sort("year")
+    )
+
+    # View the results
+    print(cases_by_year)
+
+    _fig = px.line(cases_by_year, 
+                  x='year', 
+                  y='Total_Cases',
+                  title='Total Cases By Year')
+    _fig.show()
     return
 
 
@@ -407,13 +517,143 @@ def _(mo):
     mo.md(
         r"""
     ## How has the proportion of cases leading to an arrest changed over time?
-    How have ```Domestic``` crimes evolved over time?
     How has the Primary Type of call evolved over time?
     Are there any observable patterns in arrest rates by district?
     Have any specific types of crime (```IUCR```s) changed dramatically over time?
     How is crime affected by the hour of the day?
     """
     )
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## How have ```Domestic``` crimes evolved over time?""")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+    ### First, understand the 'domestic data'
+
+    * Re-read the data dictionary
+    * Based on the data dictionary, how should you learn more about what 'Domestic means'?
+    """
+    )
+    return
+
+
+@app.cell
+def _(df2, pl, px):
+    domestic_cases = (
+                        df2
+                        .filter(pl.col('Domestic')==True)
+                        .group_by('Primary Type')
+                        .agg(pl.len().alias('count'))
+                        .sort('count',descending=True)
+                        .head(10)
+    )
+    domestic_cases
+
+    _fig = px.pie(
+        domestic_cases,
+        values='count',
+        names='Primary Type',
+        title='Top 10 Domestic Crime Types'
+    )
+
+    # _fig.update_traces(
+    #     textposition='inside',
+    #     textinfo='percent+label',
+    #     pull=[0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # Optional: pull out the largest slice
+    # )
+
+
+    _fig.show()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## District Crime Trends""")
+    return
+
+
+@app.cell
+def _(df2, np, pl):
+    start_year = 2020
+    end_year = 2024
+    crimes_per_year = 100 # What does 'increasing' or 'decreasing' mean? This number sets the threshold of crimes
+
+    # Filter data for years 2020-2024 and group by district and year
+    district_yearly_crimes = (
+        df2.filter((pl.col('Year') >= start_year) & (pl.col('Year') <= end_year))
+        .group_by(['District', 'Year'])
+        .agg(pl.col('ID').n_unique().alias('crime_count'))
+        .sort(['District', 'Year'])
+    )
+
+    # Get unique districts
+    districts = district_yearly_crimes['District'].unique().sort()
+
+    # Store results
+    trend_results = [] # Create a list to contain the District, Slope, Trend, and change per year (slope)
+
+    # Analyze each district
+    for district in districts:
+        # Filter data for this district
+        district_data = district_yearly_crimes.filter(pl.col('District') == district)
+    
+        # Extract years and crime counts
+        years = district_data['Year'].to_numpy()
+        crimes = district_data['crime_count'].to_numpy()
+    
+        # Fit linear trend (degree=1)
+        if len(years) > 1:  # Need at least 2 points for a line
+            coefficients = np.polyfit(years, crimes, deg=1) # deg 1 means linear
+            slope = coefficients[0] # coefficient 0 is the slope (m), 1 is the y-intercept (b)
+        
+            # Classify trend
+            if slope > crimes_per_year:  # Increasing by more than 100 crimes/year
+                trend = 'Increasing'
+            elif slope < -crimes_per_year:  # Decreasing by more than 100 crimes/year
+                trend = 'Decreasing'
+            else:
+                trend = 'Stable'
+        
+            trend_results.append({
+                'District': district,
+                'Slope': slope,
+                'Trend': trend,
+                'Crime_Change_Per_Year': slope
+            })
+
+    # Convert to Polars DataFrame
+    trends_df = pl.DataFrame(trend_results).sort('Slope', descending=True)
+
+    print("\n=== Crime Trends by District (2020-2024) ===\n")
+    print(trends_df)
+
+    # Summary statistics
+    print("\n=== Summary ===")
+    # height = num of rows, width = number of columns, shape is both
+    print(f"Increasing: {trends_df.filter(pl.col('Trend') == 'Increasing').height} districts") 
+    print(f"Decreasing: {trends_df.filter(pl.col('Trend') == 'Decreasing').height} districts")
+    print(f"Stable: {trends_df.filter(pl.col('Trend') == 'Stable').height} districts")
+
+    # Show top 5 increasing and decreasing districts
+    print("\n=== Top 5 Districts with Increasing Crime ===")
+    print(trends_df.filter(pl.col('Trend') == 'Increasing').head(5))
+
+    print("\n=== Top 5 Districts with Decreasing Crime ===")
+    print(trends_df.filter(pl.col('Trend') == 'Decreasing').head(5))
+    return
+
+
+@app.cell
+def _():
     return
 
 

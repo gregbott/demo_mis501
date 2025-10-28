@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.2"
+__generated_with = "0.16.3"
 app = marimo.App(width="medium")
 
 
@@ -25,6 +25,12 @@ def _(pl):
 @app.cell
 def _(df):
     df.glimpse()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## Nice to have a data dictionary""")
     return
 
 
@@ -111,6 +117,18 @@ def _(crimes_year_month, px):
 @app.cell
 def _(df2):
     df2['hour'].value_counts()
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## Standardize the months""")
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""## Overlay temp on crimes per month""")
     return
 
 
