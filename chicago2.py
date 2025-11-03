@@ -605,16 +605,16 @@ def _(df2, np, pl):
     for district in districts:
         # Filter data for this district
         district_data = district_yearly_crimes.filter(pl.col('District') == district)
-    
+
         # Extract years and crime counts
         years = district_data['Year'].to_numpy()
         crimes = district_data['crime_count'].to_numpy()
-    
+
         # Fit linear trend (degree=1)
         if len(years) > 1:  # Need at least 2 points for a line
             coefficients = np.polyfit(years, crimes, deg=1) # deg 1 means linear
             slope = coefficients[0] # coefficient 0 is the slope (m), 1 is the y-intercept (b)
-        
+
             # Classify trend
             if slope > crimes_per_year:  # Increasing by more than 100 crimes/year
                 trend = 'Increasing'
@@ -622,7 +622,7 @@ def _(df2, np, pl):
                 trend = 'Decreasing'
             else:
                 trend = 'Stable'
-        
+
             trend_results.append({
                 'District': district,
                 'Slope': slope,
