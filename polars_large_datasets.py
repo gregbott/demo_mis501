@@ -1,11 +1,11 @@
 import marimo
 
-__generated_with = "0.8.0"
+__generated_with = "0.16.3"
 app = marimo.App()
 
 
 @app.cell
-def __():
+def _():
     import polars as pl
     import pandas as pd
     import numpy as np
@@ -23,43 +23,21 @@ def __():
 
     # Parquet file path (constant throughout notebook)
     parquet_path = "./data/chicago_crime_2001_2025.parquet"
-
-    return pl, pd, np, plt, sns, time, datetime, px, go, mo, parquet_path
-
-
-@app.cell
-def __(mo):
-    return mo.md("""
-    # Loading Large Datasets with Polars
-
-    This notebook demonstrates best practices for loading and processing large datasets using Polars,
-    with comparisons to Pandas and performance visualizations.
-
-    **Dataset:** Chicago Crime Data (2001-2025) - 341MB Parquet file
-
-    ## Why Polars for Large Datasets?
-    - ⚡ **Speed**: Written in Rust, much faster than Pandas
-    - 💾 **Memory Efficient**: Lazy evaluation and streaming support
-    - 🧵 **Multi-threaded**: Automatic parallelization
-    - 🛡️ **Type Safe**: Strong typing prevents bugs
-    - 📊 **Rich API**: Functional programming style
-    """)
+    return parquet_path, pd, pl, px, time
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 1. Loading Parquet Files with Polars
-
-    ### Key Concepts:
-    - **Eager vs Lazy Loading**: Choose based on your needs
-    - **Lazy Loading**: Process larger-than-memory datasets
-    - **Filtering**: Apply filters before loading into memory
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _():
+    return
+
+
+@app.cell
+def _(parquet_path, pl):
     # Method 1: Eager Loading (loads entire file into memory)
     df_eager = pl.read_parquet(parquet_path)
 
@@ -67,30 +45,27 @@ def __(pl, parquet_path):
     print(f"Eager Load - Columns: {df_eager.columns}")
     print(f"\nFirst few rows:")
     df_eager.head()
+    return (df_eager,)
 
 
 @app.cell
-def __(df_eager):
+def _(df_eager):
     # Get basic statistics
     print("DataFrame Info:")
     print(f"Shape: {df_eager.shape}")
     print(f"Memory Usage: {df_eager.estimated_size() / 1024 / 1024:.2f} MB")
     print(f"\nData Types:")
     df_eager.schema
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 2. Lazy Loading (Lazy Evaluation)
-
-    Lazy loading reads the schema without loading the entire file.
-    This is useful for large datasets and allows query optimization.
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _(parquet_path, pl):
     # Method 2: Lazy Loading (doesn't load data yet)
     df_lazy = pl.scan_parquet(parquet_path)
 
@@ -98,19 +73,16 @@ def __(pl, parquet_path):
     print(f"Schema: {df_lazy.schema}")
     print(f"Lazy query plan:")
     print(df_lazy)
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 3. Processing Large Datasets with Lazy Evaluation
-
-    The real power of Polars shows when you chain operations before executing.
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _(parquet_path, pl):
     # Build a complex query with lazy evaluation
     lazy_query = (
         pl.scan_parquet(parquet_path)
@@ -133,6 +105,8 @@ def __(pl, parquet_path):
     print("Lazy Query Plan (optimized):")
     print(lazy_query)
 
+    print(lazy_query.explain)
+
     # Collect (execute) the query
     print("\nCollecting results...")
     df_filtered = lazy_query.collect()
@@ -141,19 +115,16 @@ def __(pl, parquet_path):
     print(f"Memory Usage: {df_filtered.estimated_size() / 1024 / 1024:.2f} MB")
     print(f"\nFirst few rows:")
     df_filtered.head()
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 4. Performance Comparison: Polars vs Pandas
-
-    Let's measure how long it takes to load and filter data in both libraries.
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, pd, time, parquet_path):
+def _(parquet_path, pd, pl, time):
     # Polars: Lazy loading with filter
     timings = {}
 
@@ -183,19 +154,16 @@ def __(pl, pd, time, parquet_path):
 
     # Store for visualization
     timing_comparison = timings
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 5. Advanced Polars Features for Large Data
-
-    ### String Containment Search
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _(parquet_path, pl):
     # Filter for theft crimes using string operations
     theft_crimes = (
         pl.scan_parquet(parquet_path)
@@ -207,17 +175,16 @@ def __(pl, parquet_path):
     print(f"Theft Crimes Found: {theft_crimes.shape[0]}")
     print(f"\nCrime Types:")
     theft_crimes.select("Primary Type").unique()
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ### Aggregations and Group By
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _(parquet_path, pl):
     # Aggregation: crimes by year
     crimes_by_year = (
         pl.scan_parquet(parquet_path)
@@ -233,10 +200,11 @@ def __(pl, parquet_path):
 
     print("Crimes by Year:")
     crimes_by_year
+    return (crimes_by_year,)
 
 
 @app.cell
-def __(crimes_by_year, px):
+def _(crimes_by_year, px):
     # Interactive line chart
     fig_crimes_year = px.line(
         crimes_by_year.to_pandas(),
@@ -248,19 +216,16 @@ def __(crimes_by_year, px):
     )
     fig_crimes_year.update_layout(hovermode="x unified", height=500)
     fig_crimes_year
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 6. Performance Benchmark: Multiple Operations
-
-    Let's compare more complex operations between Polars and Pandas.
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, pd, time, parquet_path):
+def _(parquet_path, pd, pl, time):
     benchmark_results = []
 
     # Test 1: Filtering
@@ -328,10 +293,11 @@ def __(pl, pd, time, parquet_path):
     benchmark_df = pl.DataFrame(benchmark_results)
     print("Benchmark Results:")
     print(benchmark_df)
+    return (benchmark_df,)
 
 
 @app.cell
-def __(benchmark_df, px):
+def _(benchmark_df, px):
     # Benchmark visualization
     bench_pd_bar = benchmark_df.to_pandas()
 
@@ -346,10 +312,11 @@ def __(benchmark_df, px):
     )
     fig_bench_bar.update_layout(hovermode='x unified')
     fig_bench_bar
+    return
 
 
 @app.cell
-def __(benchmark_df, px):
+def _(benchmark_df, px):
     # Speedup histogram
     bench_pd_speedup = benchmark_df.to_pandas()
 
@@ -369,19 +336,16 @@ def __(benchmark_df, px):
 
     fig_speedup.update_layout(hovermode='x unified', showlegend=False)
     fig_speedup
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 7. Memory Efficiency Comparison
-
-    One of Polars' biggest advantages is memory efficiency through lazy evaluation.
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, pd, parquet_path):
+def _(parquet_path, pd, pl):
     # Polars eager
     df_polars_eager = pl.read_parquet(parquet_path)
     polars_memory = df_polars_eager.estimated_size() / 1024 / 1024
@@ -400,10 +364,11 @@ def __(pl, pd, parquet_path):
     print(memory_comparison)
 
     memory_comparison
+    return (memory_comparison,)
 
 
 @app.cell
-def __(memory_comparison, px):
+def _(memory_comparison, px):
     mem_pd = memory_comparison.to_pandas()
 
     fig_memory = px.bar(
@@ -418,19 +383,16 @@ def __(memory_comparison, px):
     fig_memory.update_traces(texttemplate='%{text:.2f} MB', textposition='outside')
     fig_memory.update_layout(showlegend=False)
     fig_memory
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 8. Statistical Analysis with Polars
-
-    Calculate crime statistics efficiently.
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _(parquet_path, pl):
     # Crime statistics by primary type
     crime_stats = (
         pl.scan_parquet(parquet_path)
@@ -447,10 +409,11 @@ def __(pl, parquet_path):
 
     print("Top 10 Crime Types by Frequency:")
     crime_stats
+    return (crime_stats,)
 
 
 @app.cell
-def __(crime_stats, px):
+def _(crime_stats, px):
     crime_pd_bar = crime_stats.to_pandas()
 
     fig_crime_bar = px.bar(
@@ -464,10 +427,11 @@ def __(crime_stats, px):
     fig_crime_bar.update_xaxes(tickangle=-45)
     fig_crime_bar.update_layout(hovermode='x unified')
     fig_crime_bar
+    return
 
 
 @app.cell
-def __(crime_stats, px):
+def _(crime_stats, px):
     crime_pd_scatter = crime_stats.to_pandas()
 
     fig_crime_scatter = px.scatter(
@@ -483,19 +447,16 @@ def __(crime_stats, px):
     fig_crime_scatter.update_traces(textposition='top center', textfont=dict(size=10))
     fig_crime_scatter.update_layout(hovermode='closest')
     fig_crime_scatter
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 9. Geographic Analysis
-
-    Polars can handle geographic data efficiently.
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _(parquet_path, pl):
     # Geographic distribution
     geo_data = (
         pl.scan_parquet(parquet_path)
@@ -511,10 +472,11 @@ def __(pl, parquet_path):
     print(f"Crime incidents with coordinates in 2024: {geo_data.shape[0]}")
     print(f"\nSample locations:")
     geo_data.head(10)
+    return (geo_data,)
 
 
 @app.cell
-def __(geo_data, px):
+def _(geo_data, px):
     # Scatter map of crimes
     geo_pd = geo_data.to_pandas()
 
@@ -528,28 +490,16 @@ def __(geo_data, px):
     )
     fig_geo_map.update_layout(mapbox_style="open-street-map")
     fig_geo_map
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 10. Best Practices for Large Datasets
-
-    ### Summary of Key Techniques:
-
-    1. **Use `scan_parquet()` for lazy loading** - Delays computation until needed
-    2. **Filter early** - Reduces data before loading into memory
-    3. **Select specific columns** - Don't load unnecessary data
-    4. **Use aggregations in-database** - Let Polars optimize for you
-    5. **Leverage string operations** - Efficient pattern matching
-    6. **Take advantage of parallelization** - Polars does this automatically
-    7. **Consider data types** - Use appropriate types for your data
-    8. **Profile your queries** - Use `.explain()` to see the query plan
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(pl, parquet_path):
+def _(parquet_path, pl):
     # Show query plan explanation
     query = (
         pl.scan_parquet(parquet_path)
@@ -561,82 +511,23 @@ def __(pl, parquet_path):
 
     print("Optimized Query Plan:")
     print(query.explain())
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## 11. Common Operations Cheat Sheet
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ```python
-    import polars as pl
-
-    # Read Parquet (eager)
-    df = pl.read_parquet("file.parquet")
-
-    # Read Parquet (lazy)
-    df = pl.scan_parquet("file.parquet")
-
-    # Filter
-    df.filter(pl.col("column") > value)
-
-    # Select columns
-    df.select(["col1", "col2"])
-
-    # Group by and aggregate
-    df.group_by("col1").agg(pl.len().alias("count"))
-
-    # Add/modify columns
-    df.with_columns(pl.col("new_col").alias("renamed"))
-
-    # String operations
-    df.filter(pl.col("text").str.contains("pattern"))
-
-    # Collect lazy query
-    df.collect()
-
-    # Get query plan
-    df.explain()
-
-    # Sort
-    df.sort("column", descending=True)
-
-    # Limit
-    df.limit(100)
-
-    # Join
-    df1.join(df2, on="key", how="inner")
-
-    # Convert to Pandas
-    df.to_pandas()
-    ```
-    """)
+def _():
+    return
 
 
 @app.cell
-def __(mo):
-    return mo.md("""
-    ## Conclusion
+def _():
+    return
 
-    **Polars** is significantly faster and more memory-efficient than Pandas for large datasets:
 
-    - ✅ **2-10x faster** on typical operations
-    - ✅ **Lower memory footprint** with lazy evaluation
-    - ✅ **Better for out-of-memory processing** with streaming
-    - ✅ **Cleaner API** with functional programming style
-    - ✅ **Type-safe** to prevent bugs
-
-    For datasets larger than available RAM, use:
-    - **Lazy evaluation** with `scan_parquet()`
-    - **Filters early** to reduce memory
-    - **Streaming** for processing chunks
-
-    For datasets smaller than RAM:
-    - **Polars is still faster** than Pandas
-    - Choose Polars unless you have a specific Pandas requirement
-    """)
+if __name__ == "__main__":
+    app.run()

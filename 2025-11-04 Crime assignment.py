@@ -76,7 +76,12 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    mo.md(r"""Bonus Task 6: Create a heat map of the areas in Chicago with the highest murder rate""")
+    mo.md(r"""## Bonus Task 6: Create a heat map of the areas in Chicago with the highest murder rate""")
+    return
+
+
+@app.cell
+def _():
     return
 
 
