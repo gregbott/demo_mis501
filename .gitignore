@@ -261,3 +261,6 @@ __marimo__/
 # pixi environments
 .pixi
 *.egg-info
+# pixi environments
+.pixi/*
+!.pixi/config.toml
