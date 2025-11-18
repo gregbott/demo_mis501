@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.3"
+__generated_with = "0.17.8"
 app = marimo.App()
 
 
@@ -12,15 +12,13 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     # Decision Tree Classification on Iris Dataset
 
     This notebook demonstrates how to build and evaluate a decision tree classifier
     using the Iris dataset. We'll use Polars for data manipulation and scikit-learn
     for building the decision tree model.
-    """
-    )
+    """)
     return
 
 
@@ -50,8 +48,7 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 1. Load the Iris Dataset
 
     The Iris dataset contains 150 samples of iris flowers from three species:
@@ -64,8 +61,7 @@ def _(mo):
     - Sepal width
     - Petal length
     - Petal width
-    """
-    )
+    """)
     return
 
 
@@ -94,13 +90,11 @@ def _(load_iris, pl):
 
 @app.cell(hide_code=True)
 def _(iris_df, mo):
-    mo.md(
-        f"""
+    mo.md(f"""
     ### Dataset Overview
 
     Shape: {iris_df.shape}
-    """
-    )
+    """)
     return
 
 
@@ -127,13 +121,11 @@ def _(summary):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 2. Explore the Data
 
     Let's look at the distribution of species and the relationships between features.
-    """
-    )
+    """)
     return
 
 
@@ -172,7 +164,9 @@ def _(iris_df, plt):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md("""### Feature Distributions by Species""")
+    mo.md("""
+    ### Feature Distributions by Species
+    """)
     return
 
 
@@ -184,13 +178,11 @@ def _(distribution_fig):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 3. Prepare Data for Modeling
 
     Split the dataset into training (80%) and testing (20%) sets.
-    """
-    )
+    """)
     return
 
 
@@ -214,27 +206,23 @@ def _(iris_df, train_test_split):
 
 @app.cell(hide_code=True)
 def _(X_test, X_train, mo):
-    mo.md(
-        f"""
+    mo.md(f"""
     ### Data Split Summary
 
     - Training set size: {len(X_train)}
     - Testing set size: {len(X_test)}
     - Total samples: {len(X_train) + len(X_test)}
-    """
-    )
+    """)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 4. Build Decision Tree Classifier
 
     Create and train a decision tree classifier with default parameters.
-    """
-    )
+    """)
     return
 
 
@@ -247,27 +235,23 @@ def _(DecisionTreeClassifier, X_train, y_train):
 
 @app.cell(hide_code=True)
 def _(dt_classifier, mo):
-    mo.md(
-        f"""
+    mo.md(f"""
     ### Decision Tree Properties
 
     - Tree Depth: {dt_classifier.get_depth()}
     - Number of Leaves: {dt_classifier.get_n_leaves()}
     - Features Used: {dt_classifier.n_features_in_}
-    """
-    )
+    """)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 5. Make Predictions
 
     Use the trained model to make predictions on the test set.
-    """
-    )
+    """)
     return
 
 
@@ -279,13 +263,11 @@ def _(X_test, dt_classifier):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 6. Evaluate Model Performance
 
     Calculate accuracy and generate a detailed classification report.
-    """
-    )
+    """)
     return
 
 
@@ -297,13 +279,11 @@ def _(accuracy_score, y_pred, y_test):
 
 @app.cell(hide_code=True)
 def _(accuracy, mo):
-    mo.md(
-        f"""
+    mo.md(f"""
     ### Overall Accuracy
 
     **Accuracy Score: {accuracy:.4f}** ({accuracy * 100:.2f}%)
-    """
-    )
+    """)
     return
 
 
@@ -315,22 +295,19 @@ def _(classification_report, y_pred, y_test):
 
 @app.cell(hide_code=True)
 def _(mo, report):
-    mo.md(
-        f"""
+    mo.md(f"""
     ### Detailed Classification Report
 
     ```
     {report}
     ```
-    """
-    )
+    """)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 7. Confusion Matrix
 
     A confusion matrix shows how well the model's predictions match the actual labels.
@@ -342,8 +319,7 @@ def _(mo):
     - **Off-diagonal values** are misclassifications - where the model made mistakes
 
     The value at row "Virginica", column "Versicolor" is 1, it means the model incorrectly predicted 1 samples as Versicolor when they were actually Virginica.
-    """
-    )
+    """)
     return
 
 
@@ -369,8 +345,7 @@ def _(confusion_matrix, plt, sns, y_pred, y_test):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 8. Visualize the Decision Tree
 
     Display the complete decision tree structure.
@@ -383,8 +358,7 @@ def _(mo):
     - **Values** shows the count of each class at that node (e.g., [50, 0, 0] means 50 setosa, 0 versicolor, 0 virginica)
     - **Color intensity** indicates which class dominates at that node - darker colors indicate higher purity
     - **Leaf nodes** (at the bottom) make the final prediction based on which class has the most samples
-    """
-    )
+    """)
     return
 
 
@@ -418,13 +392,11 @@ def _(dt_classifier, plot_tree, plt):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 9. Feature Importance
 
     Understand which features are most important for classification.
-    """
-    )
+    """)
     return
 
 
@@ -447,8 +419,7 @@ def _(dt_classifier, plt):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        """
+    mo.md("""
     ## 10. Key Takeaways
 
     1. **Decision trees** are simple yet powerful classifiers for both classification and regression problems
@@ -463,8 +434,7 @@ def _(mo):
     - Use ensemble methods like Random Forest for potentially better generalization
     - Perform cross-validation to get more robust performance estimates
     - Implement pruning to reduce overfitting
-    """
-    )
+    """)
     return
 
 

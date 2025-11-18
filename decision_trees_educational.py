@@ -39,7 +39,7 @@ def _():
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     # Decision Trees: A Comprehensive Educational Guide
@@ -51,7 +51,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 1: Understanding the Problem
@@ -66,7 +66,7 @@ def _(mo):
 @app.cell
 def _(np, pl):
     # Create synthetic dataset matching the 100-patient example
-    np.random.seed(41)
+    np.random.seed(73)
 
     # Generate features for patients
     n_samples = 100
@@ -118,7 +118,7 @@ def _(DecisionTreeClassifier, X, train_test_split, y):
     return tree, y_pred, y_pred_proba, y_test
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 2: Visualizing the Decision Tree
@@ -153,7 +153,7 @@ def _(tree_fig):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     **How to read this tree:**
@@ -166,7 +166,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 3: The Confusion Matrix
@@ -225,7 +225,7 @@ def _(FN, FP, TN, TP, mo):
     explanation = f"""
     ### Reading the Confusion Matrix
 
-    - **True Positives (TP) = {TP}**: Model correctly identified cancer cases
+    - **True Positives (TPInclude markdown) = {TP}**: Model correctly identified cancer cases
     - **False Positives (FP) = {FP}**: Model said "cancer" but patient is healthy (false alarm)
     - **False Negatives (FN) = {FN}**: Model said "healthy" but patient has cancer (missed diagnosis)
     - **True Negatives (TN) = {TN}**: Model correctly identified healthy patients
@@ -237,7 +237,7 @@ def _(FN, FP, TN, TP, mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 4: Classification Metrics Explained
@@ -318,7 +318,7 @@ def _(
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 5: ROC-AUC: The Probability Curve
@@ -383,7 +383,7 @@ def _(mo, roc_auc):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 6: Cohen's Kappa - Accounting for Imbalance
@@ -446,7 +446,7 @@ def _(kappa, mo, observed, p_chance):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 7: Log Loss - Probability Confidence
@@ -501,7 +501,7 @@ def _(logloss, mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 8: Putting It All Together - Summary Table
@@ -575,7 +575,7 @@ def _(mo, summary_df):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 9: Key Takeaways for Cancer Screening
@@ -614,7 +614,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Part 10: Interactive Threshold Exploration
@@ -660,7 +660,7 @@ def _(
     return acc_t, f1_t, prec_t, rec_t
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, threshold):
     mo.md(f"""
     **Current Threshold: {threshold.value:.2f}**
@@ -688,7 +688,7 @@ def _(acc_t, f1_t, mo, prec_t, rec_t):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""
     ## Conclusion
