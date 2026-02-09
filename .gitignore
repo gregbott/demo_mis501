@@ -42,6 +42,7 @@ pixi.lock
 .env
 *.env
 *.secret
+*credential*
 
 # Miscellaneous
 *.cache
